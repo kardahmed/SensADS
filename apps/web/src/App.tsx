@@ -25,6 +25,8 @@ import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
 import { UpdatePasswordPage } from '@/pages/auth/UpdatePasswordPage';
 import { AdminDashboard } from '@/pages/admin/AdminDashboard';
 import { TariffsPage } from '@/pages/admin/tariffs/TariffsPage';
+import { ClientsPage } from '@/pages/admin/clients/ClientsPage';
+import { NewClientPage } from '@/pages/admin/clients/NewClientPage';
 import { TmDashboard } from '@/pages/tm/TmDashboard';
 import { ClientDashboard } from '@/pages/client/ClientDashboard';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
@@ -53,8 +55,8 @@ export function App(): JSX.Element {
                 <Route element={<ProtectedRoute allowedRoles={['super_admin', 'admin']} />}>
                   <Route element={<AppLayout />}>
                     <Route path="/admin" element={<AdminDashboard />} />
-                    <Route path="/admin/clients" element={<PlaceholderPage title="Clients" phase="S3" />} />
-                    <Route path="/admin/clients/new" element={<PlaceholderPage title="Nouveau client" phase="S3" />} />
+                    <Route path="/admin/clients" element={<ClientsPage />} />
+                    <Route path="/admin/clients/new" element={<NewClientPage />} />
                     <Route path="/admin/clients/:id" element={<PlaceholderPage title="Détail client" phase="S3" />} />
                     <Route path="/admin/tariffs" element={<TariffsPage />} />
                     <Route path="/admin/benchmarks" element={<PlaceholderPage title="Benchmarks" phase="S2" />} />
