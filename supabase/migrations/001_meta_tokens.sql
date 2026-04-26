@@ -80,40 +80,36 @@ COMMENT ON VIEW meta_tokens_safe IS 'Vue sans tokens — exposable côté API/cl
 -- ============================================
 -- FONCTIONS HELPERS (SECURITY DEFINER)
 -- ============================================
+-- Note Supabase Cloud : on n'a pas les droits ALTER DATABASE pour stocker
+-- la clé en GUC. La clé est donc passée en PARAMÈTRE par les Edge Functions
+-- (depuis leur variable d'environnement PGCRYPTO_KEY).
+-- ============================================
 
--- Chiffre un token avec la clé d'app (clé en variable d'environnement)
-CREATE OR REPLACE FUNCTION encrypt_token(plain_token text)
+CREATE OR REPLACE FUNCTION encrypt_token(plain_token text, encryption_key text)
 RETURNS bytea
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, extensions, pg_temp
 AS $$
 BEGIN
-  IF plain_token IS NULL OR plain_token = '' THEN
+  IF plain_token IS NULL OR plain_token = '' OR encryption_key IS NULL OR encryption_key = '' THEN
     RETURN NULL;
   END IF;
-  RETURN pgp_sym_encrypt(
-    plain_token,
-    current_setting('app.encryption_key', true)
-  );
+  RETURN pgp_sym_encrypt(plain_token, encryption_key);
 END;
 $$;
 
--- Déchiffre un token (utilisable uniquement côté Edge Functions avec service_role)
-CREATE OR REPLACE FUNCTION decrypt_token(encrypted_token bytea)
+CREATE OR REPLACE FUNCTION decrypt_token(encrypted_token bytea, encryption_key text)
 RETURNS text
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, extensions, pg_temp
 AS $$
 BEGIN
-  IF encrypted_token IS NULL THEN
+  IF encrypted_token IS NULL OR encryption_key IS NULL OR encryption_key = '' THEN
     RETURN NULL;
   END IF;
-  RETURN pgp_sym_decrypt(
-    encrypted_token,
-    current_setting('app.encryption_key', true)
-  );
+  RETURN pgp_sym_decrypt(encrypted_token, encryption_key);
 END;
 $$;
 

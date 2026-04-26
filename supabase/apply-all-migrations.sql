@@ -1,15 +1,19 @@
 -- ==================================================================
--- SENSADS — APPLY ALL MIGRATIONS (single-paste)
--- Generated: 2026-04-26T15:25:14Z
+-- SENSADS — APPLY ALL MIGRATIONS (single-paste, Supabase Cloud)
+-- Generated: 2026-04-26T15:29:58Z
 -- ==================================================================
 -- Usage : Supabase Dashboard > SQL Editor > New query > Paste this > Run
 --
--- AVANT D'EXÉCUTER : remplace 'REPLACE_WITH_YOUR_PGCRYPTO_KEY' ci-dessous
--- par une vraie clé générée via: openssl rand -base64 32
+-- La clé pgcrypto N'EST PAS stockée en DB-level (Supabase Cloud ne le permet pas).
+-- Les fonctions encrypt_token/decrypt_token la prennent en paramètre,
+-- passée par les Edge Functions depuis leur env var PGCRYPTO_KEY.
+--
+-- Après l'exécution de ce script :
+-- 1. Supabase Dashboard > Edge Functions > Secrets > Add :
+--    PGCRYPTO_KEY = openssl rand -base64 32
+--    META_APP_ID = (depuis https://developers.facebook.com)
+--    META_APP_SECRET = (depuis https://developers.facebook.com)
 -- ==================================================================
-
--- Set encryption key at database level
-ALTER DATABASE postgres SET app.encryption_key = 'REPLACE_WITH_YOUR_PGCRYPTO_KEY';
 
 
 -- ╔══════════════════════════════════════════════════════════════════╗
@@ -98,40 +102,36 @@ COMMENT ON VIEW meta_tokens_safe IS 'Vue sans tokens — exposable côté API/cl
 -- ============================================
 -- FONCTIONS HELPERS (SECURITY DEFINER)
 -- ============================================
+-- Note Supabase Cloud : on n'a pas les droits ALTER DATABASE pour stocker
+-- la clé en GUC. La clé est donc passée en PARAMÈTRE par les Edge Functions
+-- (depuis leur variable d'environnement PGCRYPTO_KEY).
+-- ============================================
 
--- Chiffre un token avec la clé d'app (clé en variable d'environnement)
-CREATE OR REPLACE FUNCTION encrypt_token(plain_token text)
+CREATE OR REPLACE FUNCTION encrypt_token(plain_token text, encryption_key text)
 RETURNS bytea
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, extensions, pg_temp
 AS $$
 BEGIN
-  IF plain_token IS NULL OR plain_token = '' THEN
+  IF plain_token IS NULL OR plain_token = '' OR encryption_key IS NULL OR encryption_key = '' THEN
     RETURN NULL;
   END IF;
-  RETURN pgp_sym_encrypt(
-    plain_token,
-    current_setting('app.encryption_key', true)
-  );
+  RETURN pgp_sym_encrypt(plain_token, encryption_key);
 END;
 $$;
 
--- Déchiffre un token (utilisable uniquement côté Edge Functions avec service_role)
-CREATE OR REPLACE FUNCTION decrypt_token(encrypted_token bytea)
+CREATE OR REPLACE FUNCTION decrypt_token(encrypted_token bytea, encryption_key text)
 RETURNS text
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, extensions, pg_temp
 AS $$
 BEGIN
-  IF encrypted_token IS NULL THEN
+  IF encrypted_token IS NULL OR encryption_key IS NULL OR encryption_key = '' THEN
     RETURN NULL;
   END IF;
-  RETURN pgp_sym_decrypt(
-    encrypted_token,
-    current_setting('app.encryption_key', true)
-  );
+  RETURN pgp_sym_decrypt(encrypted_token, encryption_key);
 END;
 $$;
 
@@ -3700,6 +3700,10 @@ INSERT INTO app_settings (
 -- Password: ChangeMe123!
 -- Puis : UPDATE profiles SET role = 'super_admin' WHERE email = 'admin@sensads.local';
 
--- Done. Verify:
+-- ╔══════════════════════════════════════════════════════════════════╗
+-- ║  VERIFICATION (run after to verify everything OK)
+-- ╚══════════════════════════════════════════════════════════════════╝
 -- SELECT count(*) AS tables FROM information_schema.tables WHERE table_schema='public';
 -- SELECT count(*) AS tariffs FROM platform_tariffs;
+-- SELECT count(*) AS app_settings FROM app_settings;
+-- SELECT count(*) AS benchmarks FROM global_benchmarks;

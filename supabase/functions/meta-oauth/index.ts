@@ -100,9 +100,14 @@ serve(async (req) => {
 
     const expiresAt = new Date(Date.now() + (longLived.expires_in ?? 5_184_000) * 1000).toISOString();
 
-    // Stocker chiffré
+    // Stocker chiffré (clé passée en paramètre — Supabase Cloud ne permet pas ALTER DATABASE)
     const service = createServiceClient();
-    const { data: encryptedToken } = await service.rpc('encrypt_token', { plain_token: longLived.access_token });
+    const pgcryptoKey = Deno.env.get('PGCRYPTO_KEY') ?? '';
+    if (!pgcryptoKey) return respondError(req, 500, 'PGCRYPTO_KEY env var missing');
+    const { data: encryptedToken } = await service.rpc('encrypt_token', {
+      plain_token: longLived.access_token,
+      encryption_key: pgcryptoKey,
+    });
 
     await service.from('meta_tokens').upsert({
       organization_id: verified.orgId,

@@ -35,6 +35,11 @@ serve(async (req) => {
   const service = createServiceClient();
   const appId = Deno.env.get('META_APP_ID') ?? '';
   const appSecret = Deno.env.get('META_APP_SECRET') ?? '';
+  const pgcryptoKey = Deno.env.get('PGCRYPTO_KEY') ?? '';
+  if (!pgcryptoKey) {
+    await logger.failure(500, 'PGCRYPTO_KEY env var missing');
+    return respondError(req, 500, 'PGCRYPTO_KEY env var missing');
+  }
 
   // Sélectionner les tokens qui expirent dans < 7 jours
   const sevenDaysFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -57,6 +62,7 @@ serve(async (req) => {
       // Décoder le token actuel
       const { data: plainToken } = await service.rpc('decrypt_token', {
         encrypted_token: token.access_token_encrypted,
+        encryption_key: pgcryptoKey,
       });
       if (!plainToken) {
         failed += 1;
@@ -84,7 +90,10 @@ serve(async (req) => {
       const { access_token, expires_in } = await resp.json();
       const newExpiresAt = new Date(Date.now() + expires_in * 1000).toISOString();
 
-      const { data: encryptedNewToken } = await service.rpc('encrypt_token', { plain_token: access_token });
+      const { data: encryptedNewToken } = await service.rpc('encrypt_token', {
+        plain_token: access_token,
+        encryption_key: pgcryptoKey,
+      });
 
       await service
         .from('meta_tokens')

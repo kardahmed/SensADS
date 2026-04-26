@@ -50,21 +50,6 @@ jobs:
           echo "=== Existing types ==="
           psql "$DATABASE_URL" -c "SELECT typname FROM pg_type WHERE typnamespace=(SELECT oid FROM pg_namespace WHERE nspname='public') AND typtype='e';" -tA || true
 
-      - name: Set encryption key for pgcrypto
-        env:
-          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
-          PGCRYPTO_KEY: ${{ secrets.PGCRYPTO_KEY }}
-        run: |
-          set -euo pipefail
-          if [ -z "$PGCRYPTO_KEY" ]; then
-            echo "❌ PGCRYPTO_KEY secret missing — generate via: openssl rand -base64 32"
-            exit 1
-          fi
-          # Set as DB-level setting (persists across sessions)
-          psql "$DATABASE_URL" <<SQL
-            ALTER DATABASE postgres SET app.encryption_key = '${PGCRYPTO_KEY}';
-          SQL
-
       - name: Apply migrations in order
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
