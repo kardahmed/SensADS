@@ -1,0 +1,68 @@
+{
+  "app": {
+    "name": "SensADS",
+    "tagline": "by SENSIUM-X"
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "subtitle": "Access your SensADS workspace",
+      "email": "Email address",
+      "password": "Password",
+      "totp": "6-digit code",
+      "submit": "Sign in",
+      "forgotPassword": "Forgot password?",
+      "loginError": "Invalid email or password",
+      "rateLimited": "Too many attempts. Try again in 15 minutes.",
+      "totpRequired": "Enter your 2FA code"
+    },
+    "reset": {
+      "title": "Reset password",
+      "subtitle": "Enter your email to receive a reset link",
+      "email": "Email address",
+      "submit": "Send link",
+      "success": "Email sent. Check your inbox.",
+      "backToLogin": "Back to login"
+    },
+    "logout": "Sign out"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "clients": "Clients",
+    "tariffs": "Pricing",
+    "benchmarks": "Benchmarks",
+    "quotes": "Quotes",
+    "purchaseOrders": "Purchase orders",
+    "campaigns": "Campaigns",
+    "kpis": "KPIs",
+    "invoices": "Invoices",
+    "reports": "Reports",
+    "forecasts": "Forecasts",
+    "settings": "Settings",
+    "audit": "Audit log",
+    "team": "Team",
+    "webhooks": "Webhooks",
+    "notifications": "Notifications"
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "submit": "Submit",
+    "close": "Close",
+    "search": "Search",
+    "noResults": "No results",
+    "error": "An error occurred",
+    "tryAgain": "Try again",
+    "back": "Back"
+  },
+  "errors": {
+    "generic": "Something went wrong",
+    "reload": "Reload page",
+    "network": "Network error",
+    "forbidden": "Access denied"
+  }
+}

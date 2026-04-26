@@ -1,0 +1,68 @@
+{
+  "app": {
+    "name": "SensADS",
+    "tagline": "by SENSIUM-X"
+  },
+  "auth": {
+    "login": {
+      "title": "Connexion",
+      "subtitle": "Accédez à votre espace SensADS",
+      "email": "Adresse email",
+      "password": "Mot de passe",
+      "totp": "Code à 6 chiffres",
+      "submit": "Se connecter",
+      "forgotPassword": "Mot de passe oublié ?",
+      "loginError": "Email ou mot de passe incorrect",
+      "rateLimited": "Trop de tentatives. Réessayez dans 15 minutes.",
+      "totpRequired": "Saisissez votre code 2FA"
+    },
+    "reset": {
+      "title": "Réinitialiser le mot de passe",
+      "subtitle": "Entrez votre email pour recevoir un lien de réinitialisation",
+      "email": "Adresse email",
+      "submit": "Envoyer le lien",
+      "success": "Email envoyé. Vérifiez votre boîte mail.",
+      "backToLogin": "Retour à la connexion"
+    },
+    "logout": "Se déconnecter"
+  },
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "clients": "Clients",
+    "tariffs": "Grille tarifaire",
+    "benchmarks": "Benchmarks",
+    "quotes": "Devis",
+    "purchaseOrders": "Bons de commande",
+    "campaigns": "Campagnes",
+    "kpis": "KPIs",
+    "invoices": "Factures",
+    "reports": "Rapports",
+    "forecasts": "Prévisions",
+    "settings": "Paramètres",
+    "audit": "Journal d'audit",
+    "team": "Équipe",
+    "webhooks": "Webhooks",
+    "notifications": "Notifications"
+  },
+  "common": {
+    "loading": "Chargement...",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "create": "Créer",
+    "submit": "Valider",
+    "close": "Fermer",
+    "search": "Rechercher",
+    "noResults": "Aucun résultat",
+    "error": "Une erreur est survenue",
+    "tryAgain": "Réessayer",
+    "back": "Retour"
+  },
+  "errors": {
+    "generic": "Quelque chose s'est mal passé",
+    "reload": "Recharger la page",
+    "network": "Problème de connexion réseau",
+    "forbidden": "Accès refusé"
+  }
+}
