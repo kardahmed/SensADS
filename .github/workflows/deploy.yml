@@ -1,0 +1,98 @@
+name: Deploy to Hostinger
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '22'
+  PNPM_VERSION: '9'
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy via SSH
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web app
+        run: pnpm build:web
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_APP_ENV: 'production'
+          VITE_APP_VERSION: ${{ github.sha }}
+          VITE_APP_URL: 'https://app.sensads.com'
+
+      - name: Build landing
+        run: pnpm build:landing || echo "Landing not yet implemented"
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.HOSTINGER_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H -p ${{ secrets.HOSTINGER_SSH_PORT || '22' }} ${{ secrets.HOSTINGER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy web app (rsync + symlink)
+        env:
+          SHA: ${{ github.sha }}
+          USER: ${{ secrets.HOSTINGER_USER }}
+          HOST: ${{ secrets.HOSTINGER_HOST }}
+          PORT: ${{ secrets.HOSTINGER_SSH_PORT || '22' }}
+          APP_PATH: ${{ secrets.HOSTINGER_APP_PATH }}
+        run: |
+          set -euo pipefail
+
+          # 1. Create build directory on server
+          ssh -p $PORT $USER@$HOST "mkdir -p $APP_PATH/builds/$SHA"
+
+          # 2. Rsync build artifacts
+          rsync -avz --delete \
+            -e "ssh -p $PORT" \
+            apps/web/dist/ \
+            $USER@$HOST:$APP_PATH/builds/$SHA/
+
+          # 3. Atomic symlink swap to point "current" to new build
+          ssh -p $PORT $USER@$HOST "ln -sfn $APP_PATH/builds/$SHA $APP_PATH/current && echo $SHA > $APP_PATH/CURRENT_SHA"
+
+          # 4. Rotate : keep last 5 builds
+          ssh -p $PORT $USER@$HOST "cd $APP_PATH/builds && ls -1t | tail -n +6 | xargs -r rm -rf"
+
+          echo "Deployed $SHA to https://app.sensads.com"
+
+      - name: Smoke test (health endpoint)
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+        run: |
+          set -euo pipefail
+          for i in 1 2 3 4 5; do
+            HTTP_CODE=$(curl -sw '%{http_code}' -o /dev/null "$SUPABASE_URL/functions/v1/health")
+            echo "Attempt $i: HTTP $HTTP_CODE"
+            if [ "$HTTP_CODE" = "200" ]; then exit 0; fi
+            sleep 5
+          done
+          echo "Health check failed after 5 retries"
+          exit 1
+
+      - name: Notify deploy
+        if: always()
+        run: echo "Deploy ${{ job.status }} for ${{ github.sha }}"

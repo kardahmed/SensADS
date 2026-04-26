@@ -1,0 +1,10 @@
+node_modules
+dist
+build
+coverage
+.turbo
+pnpm-lock.yaml
+packages/db/src/generated.ts
+supabase/.branches
+supabase/.temp
+*.sql

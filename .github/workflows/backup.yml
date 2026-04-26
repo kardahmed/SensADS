@@ -1,0 +1,105 @@
+name: Backup Supabase data
+
+on:
+  schedule:
+    # Tous les jours à 03h00 UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: backup-prod
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Dump Supabase + GPG + Push to backups repo
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout backups repo
+        uses: actions/checkout@v4
+        with:
+          repository: kardahmed/sensads-backups
+          token: ${{ secrets.BACKUPS_REPO_PAT }}
+          path: backups-repo
+
+      - name: Fetch financial data dump
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p dumps
+          DATE=$(date -u +%Y-%m-%d)
+          curl -sf -X POST \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            "$SUPABASE_URL/functions/v1/backup-financial-data" \
+            -o "dumps/sensads-${DATE}.json"
+
+          if [ ! -s "dumps/sensads-${DATE}.json" ]; then
+            echo "Empty dump - failing"
+            exit 1
+          fi
+
+          ls -lh dumps/
+
+      - name: Import GPG public key
+        run: |
+          set -euo pipefail
+          echo "${{ secrets.BACKUP_GPG_PUBLIC_KEY }}" | gpg --import
+          gpg --list-keys
+
+      - name: Encrypt with GPG
+        env:
+          GPG_RECIPIENT: ${{ secrets.BACKUP_GPG_RECIPIENT }}
+        run: |
+          set -euo pipefail
+          DATE=$(date -u +%Y-%m-%d)
+          gpg --batch --yes --trust-model always --output "dumps/sensads-${DATE}.json.gpg" \
+              --encrypt --recipient "$GPG_RECIPIENT" "dumps/sensads-${DATE}.json"
+          rm "dumps/sensads-${DATE}.json"
+
+          # Checksum
+          sha256sum "dumps/sensads-${DATE}.json.gpg" > "dumps/sensads-${DATE}.json.gpg.sha256"
+
+      - name: Commit & push to backups repo
+        run: |
+          set -euo pipefail
+          DATE=$(date -u +%Y-%m-%d)
+          YEAR=$(date -u +%Y)
+          MONTH=$(date -u +%m)
+
+          cd backups-repo
+          mkdir -p "dumps/$YEAR/$MONTH"
+          mv ../dumps/sensads-${DATE}.json.gpg "dumps/$YEAR/$MONTH/"
+          mv ../dumps/sensads-${DATE}.json.gpg.sha256 "dumps/$YEAR/$MONTH/"
+
+          # Cleanup : delete dumps older than 90 days
+          find dumps -type f -name "*.gpg" -mtime +90 -delete
+          find dumps -type f -name "*.sha256" -mtime +90 -delete
+          find dumps -type d -empty -delete
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git commit -m "backup: ${DATE}"
+          git push
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const date = new Date().toISOString().slice(0, 10);
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Backup failed on ${date}`,
+              body: `The nightly backup workflow failed. See run: ${context.payload.repository.html_url}/actions/runs/${context.runId}`,
+              labels: ['backup', 'incident'],
+            });
