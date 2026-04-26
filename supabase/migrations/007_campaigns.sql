@@ -285,7 +285,7 @@ CREATE POLICY "campaigns_insert" ON campaigns
   WITH CHECK (
     (is_staff()) OR
     (organization_id = current_org_id()
-      AND current_role() IN ('client_owner', 'client_member')
+      AND current_user_role() IN ('client_owner', 'client_member')
       AND created_by = auth.uid())
   );
 
@@ -298,12 +298,12 @@ CREATE POLICY "campaigns_update_owner_draft" ON campaigns
   FOR UPDATE TO authenticated
   USING (
     organization_id = current_org_id()
-    AND current_role() = 'client_owner'
+    AND current_user_role() = 'client_owner'
     AND status = 'draft'
   )
   WITH CHECK (
     organization_id = current_org_id()
-    AND current_role() = 'client_owner'
+    AND current_user_role() = 'client_owner'
     AND status IN ('draft', 'in_review')
   );
 
@@ -335,7 +335,7 @@ CREATE POLICY "ad_sets_modify_via_campaign" ON ad_sets
         AND c.status IN ('draft', 'in_review')
         AND (
           is_staff()
-          OR (c.organization_id = current_org_id() AND current_role() = 'client_owner')
+          OR (c.organization_id = current_org_id() AND current_user_role() = 'client_owner')
         )
     )
   )
@@ -346,7 +346,7 @@ CREATE POLICY "ad_sets_modify_via_campaign" ON ad_sets
         AND c.status IN ('draft', 'in_review')
         AND (
           is_staff()
-          OR (c.organization_id = current_org_id() AND current_role() = 'client_owner')
+          OR (c.organization_id = current_org_id() AND current_user_role() = 'client_owner')
         )
     )
   );
@@ -381,7 +381,7 @@ CREATE POLICY "ads_modify_via_ad_set" ON ads
         AND c.status IN ('draft', 'in_review')
         AND (
           is_staff()
-          OR (c.organization_id = current_org_id() AND current_role() = 'client_owner')
+          OR (c.organization_id = current_org_id() AND current_user_role() = 'client_owner')
         )
     )
   )
@@ -393,7 +393,7 @@ CREATE POLICY "ads_modify_via_ad_set" ON ads
         AND c.status IN ('draft', 'in_review')
         AND (
           is_staff()
-          OR (c.organization_id = current_org_id() AND current_role() = 'client_owner')
+          OR (c.organization_id = current_org_id() AND current_user_role() = 'client_owner')
         )
     )
   );

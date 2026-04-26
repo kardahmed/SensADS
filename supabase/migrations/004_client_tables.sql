@@ -181,7 +181,7 @@ CREATE POLICY "sub_requests_insert_owner" ON sub_account_requests
   FOR INSERT TO authenticated
   WITH CHECK (
     organization_id = current_org_id()
-    AND current_role() = 'client_owner'
+    AND current_user_role() = 'client_owner'
     AND requested_by = auth.uid()
   );
 

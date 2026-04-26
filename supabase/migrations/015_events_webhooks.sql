@@ -200,11 +200,11 @@ CREATE POLICY "webhook_endpoints_modify_owner" ON webhook_endpoints
   FOR ALL TO authenticated
   USING (
     organization_id = current_org_id()
-    AND current_role() = 'client_owner'
+    AND current_user_role() = 'client_owner'
   )
   WITH CHECK (
     organization_id = current_org_id()
-    AND current_role() = 'client_owner'
+    AND current_user_role() = 'client_owner'
     AND created_by = auth.uid()
   );
 

@@ -211,7 +211,7 @@ AS $$
 $$;
 
 -- Retourne le rôle de l'utilisateur courant
-CREATE OR REPLACE FUNCTION current_role()
+CREATE OR REPLACE FUNCTION current_user_role()
 RETURNS user_role
 LANGUAGE sql
 STABLE
@@ -228,7 +228,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
-  SELECT current_role() = 'super_admin';
+  SELECT current_user_role() = 'super_admin';
 $$;
 
 CREATE OR REPLACE FUNCTION is_admin()
@@ -238,7 +238,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
-  SELECT current_role() IN ('super_admin', 'admin');
+  SELECT current_user_role() IN ('super_admin', 'admin');
 $$;
 
 CREATE OR REPLACE FUNCTION is_staff()
@@ -248,7 +248,7 @@ STABLE
 SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
-  SELECT current_role() IN ('super_admin', 'admin', 'traffic_manager');
+  SELECT current_user_role() IN ('super_admin', 'admin', 'traffic_manager');
 $$;
 
 CREATE OR REPLACE FUNCTION is_client_owner_of(org_id uuid)
@@ -294,7 +294,7 @@ CREATE POLICY "profiles_select_admin" ON profiles
 CREATE POLICY "profiles_select_tm_clients" ON profiles
   FOR SELECT TO authenticated
   USING (
-    current_role() = 'traffic_manager'
+    current_user_role() = 'traffic_manager'
     AND organization_id IN (
       SELECT id FROM organizations WHERE assigned_tm_id = auth.uid()
     )
@@ -353,8 +353,8 @@ CREATE POLICY "organizations_modify_admin" ON organizations
 
 CREATE POLICY "organizations_update_owner" ON organizations
   FOR UPDATE TO authenticated
-  USING (id = current_org_id() AND current_role() = 'client_owner')
-  WITH CHECK (id = current_org_id() AND current_role() = 'client_owner');
+  USING (id = current_org_id() AND current_user_role() = 'client_owner')
+  WITH CHECK (id = current_org_id() AND current_user_role() = 'client_owner');
 
 -- ============================================
 -- RLS POLICIES — app_settings

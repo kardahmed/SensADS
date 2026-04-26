@@ -140,7 +140,7 @@ CREATE POLICY "quotes_insert_client_owner" ON quotes
   FOR INSERT TO authenticated
   WITH CHECK (
     organization_id = current_org_id()
-    AND current_role() IN ('client_owner', 'client_member')
+    AND current_user_role() IN ('client_owner', 'client_member')
     AND created_by = auth.uid()
   );
 
@@ -152,12 +152,12 @@ CREATE POLICY "quotes_update_owner" ON quotes
   FOR UPDATE TO authenticated
   USING (
     organization_id = current_org_id()
-    AND current_role() = 'client_owner'
+    AND current_user_role() = 'client_owner'
     AND status = 'draft'
   )
   WITH CHECK (
     organization_id = current_org_id()
-    AND current_role() = 'client_owner'
+    AND current_user_role() = 'client_owner'
   );
 
 CREATE POLICY "quotes_update_staff" ON quotes
@@ -199,7 +199,7 @@ CREATE POLICY "quote_lines_modify_via_quote" ON quote_lines
         AND q.status = 'draft'
         AND (
           is_staff()
-          OR (q.organization_id = current_org_id() AND current_role() = 'client_owner')
+          OR (q.organization_id = current_org_id() AND current_user_role() = 'client_owner')
         )
     )
   )
@@ -210,7 +210,7 @@ CREATE POLICY "quote_lines_modify_via_quote" ON quote_lines
         AND q.status = 'draft'
         AND (
           is_staff()
-          OR (q.organization_id = current_org_id() AND current_role() = 'client_owner')
+          OR (q.organization_id = current_org_id() AND current_user_role() = 'client_owner')
         )
     )
   );

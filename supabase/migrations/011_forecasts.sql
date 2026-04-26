@@ -178,12 +178,12 @@ CREATE POLICY "forecasts_approve_client" ON budget_forecasts
   FOR UPDATE TO authenticated
   USING (
     organization_id = current_org_id()
-    AND current_role() = 'client_owner'
+    AND current_user_role() = 'client_owner'
     AND status = 'shared_with_client'
   )
   WITH CHECK (
     organization_id = current_org_id()
-    AND current_role() = 'client_owner'
+    AND current_user_role() = 'client_owner'
     AND status IN ('approved', 'shared_with_client')
   );
 
