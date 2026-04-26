@@ -24,6 +24,7 @@ import { LoginPage } from '@/pages/auth/LoginPage';
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
 import { UpdatePasswordPage } from '@/pages/auth/UpdatePasswordPage';
 import { AdminDashboard } from '@/pages/admin/AdminDashboard';
+import { TariffsPage } from '@/pages/admin/tariffs/TariffsPage';
 import { TmDashboard } from '@/pages/tm/TmDashboard';
 import { ClientDashboard } from '@/pages/client/ClientDashboard';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
@@ -55,7 +56,7 @@ export function App(): JSX.Element {
                     <Route path="/admin/clients" element={<PlaceholderPage title="Clients" phase="S3" />} />
                     <Route path="/admin/clients/new" element={<PlaceholderPage title="Nouveau client" phase="S3" />} />
                     <Route path="/admin/clients/:id" element={<PlaceholderPage title="Détail client" phase="S3" />} />
-                    <Route path="/admin/tariffs" element={<PlaceholderPage title="Grille tarifaire" phase="S2" />} />
+                    <Route path="/admin/tariffs" element={<TariffsPage />} />
                     <Route path="/admin/benchmarks" element={<PlaceholderPage title="Benchmarks" phase="S2" />} />
                     <Route path="/admin/quotes" element={<PlaceholderPage title="Devis" phase="S4" />} />
                     <Route path="/admin/invoices" element={<PlaceholderPage title="Factures" phase="S8" />} />
