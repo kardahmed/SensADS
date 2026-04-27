@@ -33,26 +33,40 @@ export function useNotifications() {
     },
   });
 
-  // Realtime subscription
+  // Realtime subscription (silent fail si Realtime pas activé sur la table)
   useEffect(() => {
     if (!profile?.id) return;
-    const channel = supabase
-      .channel(`notif-${profile.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `recipient_id=eq.${profile.id}`,
-        },
-        () => {
-          void qc.invalidateQueries({ queryKey: ['notifications', profile.id] });
-        },
-      )
-      .subscribe();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    try {
+      channel = supabase
+        .channel(`notif-${profile.id}-${Date.now()}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `recipient_id=eq.${profile.id}`,
+          },
+          () => {
+            void qc.invalidateQueries({ queryKey: ['notifications', profile.id] });
+          },
+        )
+        .subscribe((status, err) => {
+          if (status === 'CHANNEL_ERROR' || err) {
+            // Realtime non disponible — silently fail
+            // L'utilisateur devra refresh pour voir les nouvelles notifs
+          }
+        });
+    } catch {
+      // Pas de Realtime — pas grave, polling possible via React Query
+    }
+
     return () => {
-      void supabase.removeChannel(channel);
+      if (channel) {
+        void supabase.removeChannel(channel).catch(() => {});
+      }
     };
   }, [profile?.id, qc]);
 
