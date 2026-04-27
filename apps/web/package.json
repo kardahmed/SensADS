@@ -15,6 +15,7 @@
     "@sensads/core": "workspace:*",
     "@sensads/db": "workspace:*",
     "@hookform/resolvers": "^3.9.0",
+    "@react-pdf/renderer": "^4.0.0",
     "@supabase/supabase-js": "^2.45.4",
     "@tanstack/react-query": "^5.59.0",
     "clsx": "^2.1.1",

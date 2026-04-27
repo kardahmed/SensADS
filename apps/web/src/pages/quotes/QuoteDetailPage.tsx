@@ -3,7 +3,8 @@
  */
 
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, FileText, Building2, User, Calendar } from 'lucide-react';
+import { ArrowLeft, FileText, Building2, User, Calendar, Download } from 'lucide-react';
+import { PDFDownloadLink } from '@react-pdf/renderer';
 import { useTranslation } from 'react-i18next';
 import {
   formatAmount,
@@ -15,6 +16,8 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { useQuote } from '@/hooks/useQuotes';
 import { useOrganization } from '@/hooks/useOrganizations';
+import { useAppSettings } from '@/hooks/useAppSettings';
+import { QuotePDF } from '@/pdfs/QuotePDF';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -33,6 +36,7 @@ export function QuoteDetailPage(): JSX.Element {
 
   const { data: quote, isLoading, error } = useQuote(id);
   const { data: org } = useOrganization(quote?.organizationId);
+  const { data: appSettings } = useAppSettings();
 
   const baseRoute = isStaff ? '/admin/quotes' : '/client/quotes';
 
@@ -93,13 +97,38 @@ export function QuoteDetailPage(): JSX.Element {
 
       {/* Actions */}
       <Card>
-        <CardContent className="p-4">
+        <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
           {profile && (
             <QuoteActions
               quote={quote}
               currentUserId={profile.id}
               role={profile.role}
             />
+          )}
+          {org && appSettings && (
+            <PDFDownloadLink
+              document={
+                <QuotePDF
+                  quote={quote}
+                  organization={org}
+                  agency={{
+                    agency_name: appSettings.agencyName,
+                    agency_address: appSettings.agencyAddress,
+                    agency_nif: appSettings.agencyNif,
+                    agency_vat_id: appSettings.agencyVatId,
+                  }}
+                  language={lang}
+                />
+              }
+              fileName={`${quote.number}.pdf`}
+            >
+              {({ loading }) => (
+                <Button variant="outline" disabled={loading}>
+                  <Download className="h-4 w-4" />
+                  {loading ? 'Génération...' : 'Télécharger PDF'}
+                </Button>
+              )}
+            </PDFDownloadLink>
           )}
         </CardContent>
       </Card>

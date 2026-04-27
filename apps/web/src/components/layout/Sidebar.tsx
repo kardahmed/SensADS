@@ -43,6 +43,8 @@ export function Sidebar(): JSX.Element {
     { to: '/admin/tariffs', label: t('nav.tariffs'), icon: Tag, roles: ['super_admin', 'admin'] },
     { to: '/admin/benchmarks', label: t('nav.benchmarks'), icon: TrendingUp, roles: ['super_admin', 'admin'] },
     { to: '/admin/quotes', label: t('nav.quotes'), icon: FileText, roles: ['super_admin', 'admin'] },
+    { to: '/admin/purchase-orders', label: t('nav.purchaseOrders'), icon: Receipt, roles: ['super_admin', 'admin'] },
+    { to: '/admin/campaigns', label: t('nav.campaigns'), icon: Megaphone, roles: ['super_admin', 'admin'] },
     { to: '/admin/invoices', label: t('nav.invoices'), icon: Receipt, roles: ['super_admin', 'admin'] },
     { to: '/admin/audit-logs', label: t('nav.audit'), icon: ScrollText, roles: ['super_admin'] },
     { to: '/admin/settings', label: t('nav.settings'), icon: Settings, roles: ['super_admin'] },
@@ -56,6 +58,7 @@ export function Sidebar(): JSX.Element {
     // CLIENT
     { to: '/client', label: t('nav.dashboard'), icon: LayoutDashboard, roles: ['client_owner', 'client_member'] },
     { to: '/client/quotes', label: t('nav.quotes'), icon: FileText, roles: ['client_owner', 'client_member'] },
+    { to: '/client/purchase-orders', label: t('nav.purchaseOrders'), icon: Receipt, roles: ['client_owner', 'client_member'] },
     { to: '/client/campaigns', label: t('nav.campaigns'), icon: Megaphone, roles: ['client_owner', 'client_member'] },
     { to: '/client/invoices', label: t('nav.invoices'), icon: Receipt, roles: ['client_owner', 'client_member'] },
     { to: '/client/reports', label: t('nav.reports'), icon: FileBarChart, roles: ['client_owner', 'client_member'] },

@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import type { Quote, UserRole } from '@sensads/core';
 import { useUpdateQuoteStatus } from '@/hooks/useQuotes';
+import { useCreatePurchaseOrder } from '@/hooks/usePurchaseOrders';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogFooter } from '@/components/ui/Dialog';
@@ -35,6 +36,7 @@ interface Props {
 export function QuoteActions({ quote, currentUserId, role }: Props): JSX.Element {
   const navigate = useNavigate();
   const update = useUpdateQuoteStatus();
+  const createPo = useCreatePurchaseOrder();
   const toast = useToast();
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -73,13 +75,23 @@ export function QuoteActions({ quote, currentUserId, role }: Props): JSX.Element
   };
 
   const handleConvert = async () => {
-    if (!confirm('Convertir ce devis en BDC ?')) return;
-    toast.show({
-      variant: 'info',
-      title: 'BDC à venir',
-      message: 'La création de BDC sera disponible en Phase 4. Statut mis à jour pour le test.',
-    });
-    await transition('converted', 'Devis marqué comme converti');
+    if (!confirm(`Convertir ce devis en BDC pour ${quote.totalDzd.toLocaleString('fr-DZ')} DZD ?`)) return;
+    try {
+      const po = await createPo.mutateAsync({
+        organizationId: quote.organizationId,
+        quoteId: quote.id,
+        amountTtcDzd: quote.totalDzd,
+      });
+      toast.show({ variant: 'success', title: 'BDC créé', message: `${po.number}` });
+      const baseRoute = isStaff ? '/admin/purchase-orders' : '/client/purchase-orders';
+      navigate(`${baseRoute}/${po.id}`);
+    } catch (err) {
+      toast.show({
+        variant: 'error',
+        title: 'Erreur conversion',
+        message: err instanceof Error ? err.message : 'Inconnu',
+      });
+    }
   };
 
   const handleCancel = async () => {
