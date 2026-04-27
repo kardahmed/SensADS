@@ -30,6 +30,7 @@ import { NewClientPage } from '@/pages/admin/clients/NewClientPage';
 import { ClientDetailPage } from '@/pages/admin/clients/ClientDetailPage';
 import { QuotesPage } from '@/pages/quotes/QuotesPage';
 import { NewQuotePage } from '@/pages/quotes/NewQuotePage';
+import { QuoteDetailPage } from '@/pages/quotes/QuoteDetailPage';
 import { TmDashboard } from '@/pages/tm/TmDashboard';
 import { ClientDashboard } from '@/pages/client/ClientDashboard';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
@@ -65,7 +66,7 @@ export function App(): JSX.Element {
                     <Route path="/admin/benchmarks" element={<PlaceholderPage title="Benchmarks" phase="S2" />} />
                     <Route path="/admin/quotes" element={<QuotesPage />} />
                     <Route path="/admin/quotes/new" element={<NewQuotePage />} />
-                    <Route path="/admin/quotes/:id" element={<PlaceholderPage title="Détail devis" phase="3.3" />} />
+                    <Route path="/admin/quotes/:id" element={<QuoteDetailPage />} />
                     <Route path="/admin/invoices" element={<PlaceholderPage title="Factures" phase="S8" />} />
                   </Route>
                 </Route>
@@ -94,7 +95,7 @@ export function App(): JSX.Element {
                     <Route path="/client" element={<ClientDashboard />} />
                     <Route path="/client/quotes" element={<QuotesPage />} />
                     <Route path="/client/quotes/new" element={<NewQuotePage />} />
-                    <Route path="/client/quotes/:id" element={<PlaceholderPage title="Détail devis" phase="3.3" />} />
+                    <Route path="/client/quotes/:id" element={<QuoteDetailPage />} />
                     <Route path="/client/campaigns" element={<PlaceholderPage title="Mes campagnes" phase="S6" />} />
                     <Route path="/client/invoices" element={<PlaceholderPage title="Mes factures" phase="S8" />} />
                     <Route path="/client/reports" element={<PlaceholderPage title="Rapports" phase="S9" />} />
