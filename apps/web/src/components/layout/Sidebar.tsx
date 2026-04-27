@@ -17,6 +17,7 @@ import {
   Webhook,
   ChevronsLeft,
   ChevronsRight,
+  Sparkles,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
@@ -46,6 +47,9 @@ export function Sidebar(): JSX.Element {
     { to: '/admin/purchase-orders', label: t('nav.purchaseOrders'), icon: Receipt, roles: ['super_admin', 'admin'] },
     { to: '/admin/campaigns', label: t('nav.campaigns'), icon: Megaphone, roles: ['super_admin', 'admin'] },
     { to: '/admin/invoices', label: t('nav.invoices'), icon: Receipt, roles: ['super_admin', 'admin'] },
+    { to: '/admin/reports', label: t('nav.reports'), icon: FileBarChart, roles: ['super_admin', 'admin'] },
+    { to: '/admin/forecasts', label: t('nav.forecasts'), icon: CalendarRange, roles: ['super_admin', 'admin'] },
+    { to: '/admin/suggestions', label: t('nav.suggestions', { defaultValue: 'Suggestions' }), icon: Sparkles, roles: ['super_admin', 'admin'] },
     { to: '/admin/audit-logs', label: t('nav.audit'), icon: ScrollText, roles: ['super_admin'] },
     { to: '/admin/settings', label: t('nav.settings'), icon: Settings, roles: ['super_admin'] },
 
@@ -54,6 +58,7 @@ export function Sidebar(): JSX.Element {
     { to: '/tm/campaigns', label: t('nav.campaigns'), icon: Megaphone, roles: ['traffic_manager'] },
     { to: '/tm/kpis', label: t('nav.kpis'), icon: BarChart3, roles: ['traffic_manager'] },
     { to: '/tm/forecasts', label: t('nav.forecasts'), icon: CalendarRange, roles: ['traffic_manager'] },
+    { to: '/tm/suggestions', label: t('nav.suggestions', { defaultValue: 'Suggestions' }), icon: Sparkles, roles: ['traffic_manager'] },
 
     // CLIENT
     { to: '/client', label: t('nav.dashboard'), icon: LayoutDashboard, roles: ['client_owner', 'client_member'] },
@@ -62,6 +67,8 @@ export function Sidebar(): JSX.Element {
     { to: '/client/campaigns', label: t('nav.campaigns'), icon: Megaphone, roles: ['client_owner', 'client_member'] },
     { to: '/client/invoices', label: t('nav.invoices'), icon: Receipt, roles: ['client_owner', 'client_member'] },
     { to: '/client/reports', label: t('nav.reports'), icon: FileBarChart, roles: ['client_owner', 'client_member'] },
+    { to: '/client/forecasts', label: t('nav.forecasts'), icon: CalendarRange, roles: ['client_owner', 'client_member'] },
+    { to: '/client/suggestions', label: t('nav.suggestions', { defaultValue: 'Suggestions' }), icon: Sparkles, roles: ['client_owner', 'client_member'] },
     { to: '/client/team', label: t('nav.team'), icon: UsersRound, roles: ['client_owner'] },
     { to: '/client/webhooks', label: t('nav.webhooks'), icon: Webhook, roles: ['client_owner'] },
   ];

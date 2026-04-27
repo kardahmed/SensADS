@@ -35,6 +35,13 @@ import { TmKpisPage } from '@/pages/tm/TmKpisPage';
 import { TeamPage } from '@/pages/client/TeamPage';
 import { WebhooksPage } from '@/pages/client/WebhooksPage';
 import { AuditLogsPage } from '@/pages/admin/AuditLogsPage';
+import { AppSettingsPage } from '@/pages/admin/AppSettingsPage';
+import { BenchmarksPage } from '@/pages/admin/BenchmarksPage';
+import { AccountPage } from '@/pages/account/AccountPage';
+import { SecurityPage } from '@/pages/account/SecurityPage';
+import { ReportsPage } from '@/pages/reports/ReportsPage';
+import { SuggestionsPage } from '@/pages/intelligence/SuggestionsPage';
+import { ForecastsPage } from '@/pages/forecasts/ForecastsPage';
 import { ClientDashboard } from '@/pages/client/ClientDashboard';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { ForbiddenPage } from '@/pages/ForbiddenPage';
@@ -63,7 +70,7 @@ export function App(): JSX.Element {
                     <Route path="/admin/clients/new" element={<NewClientPage />} />
                     <Route path="/admin/clients/:id" element={<ClientDetailPage />} />
                     <Route path="/admin/tariffs" element={<TariffsPage />} />
-                    <Route path="/admin/benchmarks" element={<PlaceholderPage title="Benchmarks" phase="S2" />} />
+                    <Route path="/admin/benchmarks" element={<BenchmarksPage />} />
                     <Route path="/admin/quotes" element={<QuotesPage />} />
                     <Route path="/admin/quotes/new" element={<NewQuotePage />} />
                     <Route path="/admin/quotes/:id" element={<QuoteDetailPage />} />
@@ -73,13 +80,16 @@ export function App(): JSX.Element {
                     <Route path="/admin/campaigns/:id" element={<CampaignDetailPage />} />
                     <Route path="/admin/invoices" element={<InvoicesPage />} />
                     <Route path="/admin/invoices/:id" element={<InvoiceDetailPage />} />
+                    <Route path="/admin/reports" element={<ReportsPage />} />
+                    <Route path="/admin/suggestions" element={<SuggestionsPage />} />
+                    <Route path="/admin/forecasts" element={<ForecastsPage />} />
                   </Route>
                 </Route>
 
                 <Route element={<ProtectedRoute allowedRoles={['super_admin']} />}>
                   <Route element={<AppLayout />}>
                     <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
-                    <Route path="/admin/settings" element={<PlaceholderPage title="Paramètres app" phase="S5" />} />
+                    <Route path="/admin/settings" element={<AppSettingsPage />} />
                   </Route>
                 </Route>
 
@@ -89,7 +99,8 @@ export function App(): JSX.Element {
                     <Route path="/tm/campaigns" element={<CampaignsPage />} />
                     <Route path="/tm/campaigns/:id" element={<CampaignDetailPage />} />
                     <Route path="/tm/kpis" element={<TmKpisPage />} />
-                    <Route path="/tm/forecasts" element={<PlaceholderPage title="Prévisions" phase="S11" />} />
+                    <Route path="/tm/forecasts" element={<ForecastsPage />} />
+                    <Route path="/tm/suggestions" element={<SuggestionsPage />} />
                   </Route>
                 </Route>
 
@@ -106,7 +117,9 @@ export function App(): JSX.Element {
                     <Route path="/client/campaigns/:id" element={<CampaignDetailPage />} />
                     <Route path="/client/invoices" element={<InvoicesPage />} />
                     <Route path="/client/invoices/:id" element={<InvoiceDetailPage />} />
-                    <Route path="/client/reports" element={<PlaceholderPage title="Rapports" phase="S9" />} />
+                    <Route path="/client/reports" element={<ReportsPage />} />
+                    <Route path="/client/suggestions" element={<SuggestionsPage />} />
+                    <Route path="/client/forecasts" element={<ForecastsPage />} />
                   </Route>
                 </Route>
 
@@ -119,8 +132,8 @@ export function App(): JSX.Element {
 
                 <Route element={<ProtectedRoute />}>
                   <Route element={<AppLayout />}>
-                    <Route path="/account" element={<PlaceholderPage title="Mon profil" phase="S1" />} />
-                    <Route path="/account/security" element={<PlaceholderPage title="Sécurité (2FA)" phase="S1" />} />
+                    <Route path="/account" element={<AccountPage />} />
+                    <Route path="/account/security" element={<SecurityPage />} />
                   </Route>
                 </Route>
 
