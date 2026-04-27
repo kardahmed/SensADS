@@ -28,6 +28,8 @@ import { TariffsPage } from '@/pages/admin/tariffs/TariffsPage';
 import { ClientsPage } from '@/pages/admin/clients/ClientsPage';
 import { NewClientPage } from '@/pages/admin/clients/NewClientPage';
 import { ClientDetailPage } from '@/pages/admin/clients/ClientDetailPage';
+import { QuotesPage } from '@/pages/quotes/QuotesPage';
+import { NewQuotePage } from '@/pages/quotes/NewQuotePage';
 import { TmDashboard } from '@/pages/tm/TmDashboard';
 import { ClientDashboard } from '@/pages/client/ClientDashboard';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
@@ -61,7 +63,9 @@ export function App(): JSX.Element {
                     <Route path="/admin/clients/:id" element={<ClientDetailPage />} />
                     <Route path="/admin/tariffs" element={<TariffsPage />} />
                     <Route path="/admin/benchmarks" element={<PlaceholderPage title="Benchmarks" phase="S2" />} />
-                    <Route path="/admin/quotes" element={<PlaceholderPage title="Devis" phase="S4" />} />
+                    <Route path="/admin/quotes" element={<QuotesPage />} />
+                    <Route path="/admin/quotes/new" element={<NewQuotePage />} />
+                    <Route path="/admin/quotes/:id" element={<PlaceholderPage title="Détail devis" phase="3.3" />} />
                     <Route path="/admin/invoices" element={<PlaceholderPage title="Factures" phase="S8" />} />
                   </Route>
                 </Route>
@@ -88,7 +92,9 @@ export function App(): JSX.Element {
                 <Route element={<ProtectedRoute allowedRoles={['client_owner', 'client_member']} />}>
                   <Route element={<AppLayout />}>
                     <Route path="/client" element={<ClientDashboard />} />
-                    <Route path="/client/quotes" element={<PlaceholderPage title="Mes devis" phase="S4" />} />
+                    <Route path="/client/quotes" element={<QuotesPage />} />
+                    <Route path="/client/quotes/new" element={<NewQuotePage />} />
+                    <Route path="/client/quotes/:id" element={<PlaceholderPage title="Détail devis" phase="3.3" />} />
                     <Route path="/client/campaigns" element={<PlaceholderPage title="Mes campagnes" phase="S6" />} />
                     <Route path="/client/invoices" element={<PlaceholderPage title="Mes factures" phase="S8" />} />
                     <Route path="/client/reports" element={<PlaceholderPage title="Rapports" phase="S9" />} />
