@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fr">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>Confidentialité — SENSIUM-X</title>
+<style>body{font-family:Inter,system-ui,sans-serif;max-width:800px;margin:2rem auto;padding:1.5rem;color:#0A2540;line-height:1.6}h1{margin-bottom:1rem}h2{margin-top:2rem;margin-bottom:.5rem}a{color:#38BDF8}p,li{margin-bottom:.5rem}</style>
+</head>
+<body>
+<a href="/">← Retour</a>
+<h1>Politique de confidentialité (RGPD)</h1>
+<p><em>Dernière mise à jour : Janvier 2026</em></p>
+
+<h2>1. Responsable du traitement</h2>
+<p>SENSIUM-X — contact@sensads.com — Algérie.</p>
+
+<h2>2. Données collectées</h2>
+<ul>
+<li><strong>Compte utilisateur</strong> : email, nom, mot de passe (hashé), rôle</li>
+<li><strong>Organisation</strong> : nom, NIF/NIS/RC, adresse, contact, configuration financière</li>
+<li><strong>Activité</strong> : devis, BDC, campagnes, KPIs, factures liés à votre organisation</li>
+<li><strong>Tokens OAuth</strong> Meta/Google (chiffrés via pgcrypto)</li>
+<li><strong>Logs d&apos;audit</strong> : actions sensibles tracées immutablement (5 ans)</li>
+</ul>
+
+<h2>3. Finalités</h2>
+<p>Exécution des prestations de Digital Traffic Management, facturation, conformité légale.</p>
+
+<h2>4. Base légale</h2>
+<p>Exécution du contrat (CGV) et obligations légales (facturation, comptabilité).</p>
+
+<h2>5. Conservation</h2>
+<ul>
+<li>Données comptables (factures, BDC) : 10 ans (obligation légale)</li>
+<li>Audit logs : 5 ans</li>
+<li>Compte utilisateur : durée de la relation contractuelle + 2 ans</li>
+<li>Médias campagnes : 90 jours puis archivés</li>
+</ul>
+
+<h2>6. Vos droits (RGPD)</h2>
+<ul>
+<li><strong>Accès</strong> : export complet de vos données via l&apos;app (Edge Function gdpr-export-user-data)</li>
+<li><strong>Rectification</strong> : depuis votre profil</li>
+<li><strong>Effacement</strong> : sur demande à contact@sensads.com (soft-delete 30j puis hard-delete sauf contraintes légales)</li>
+<li><strong>Portabilité</strong> : export JSON via l&apos;app</li>
+<li><strong>Opposition</strong> : pour les communications marketing uniquement</li>
+</ul>
+
+<h2>7. Sécurité</h2>
+<ul>
+<li>RLS PostgreSQL sur toutes les tables</li>
+<li>Tokens OAuth chiffrés via pgcrypto</li>
+<li>2FA TOTP obligatoire pour les administrateurs</li>
+<li>Audit logs immutables</li>
+<li>Backups quotidiens chiffrés (GPG) hors-site</li>
+</ul>
+
+<h2>8. Sous-traitants</h2>
+<ul>
+<li>Supabase (hébergement DB) — Frankfurt, Allemagne (UE)</li>
+<li>Hostinger (hébergement web) — Lituanie (UE)</li>
+<li>GitHub (code source + backups privés) — USA (clauses standard UE)</li>
+</ul>
+
+<h2>9. Loi 18-07 Algérie</h2>
+<p>Conformité avec la loi algérienne 18-07 du 10 juin 2018 relative à la protection des personnes physiques dans le traitement des données à caractère personnel.</p>
+
+<h2>10. Contact DPO</h2>
+<p><a href="mailto:contact@sensads.com">contact@sensads.com</a></p>
+
+<p style="margin-top:3rem"><a href="/">← Retour au site</a></p>
+</body>
+</html>

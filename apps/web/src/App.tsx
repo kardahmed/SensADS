@@ -31,6 +31,10 @@ import { CampaignWizard } from '@/pages/wizard/CampaignWizard';
 import { InvoicesPage } from '@/pages/invoices/InvoicesPage';
 import { InvoiceDetailPage } from '@/pages/invoices/InvoiceDetailPage';
 import { TmDashboard } from '@/pages/tm/TmDashboard';
+import { TmKpisPage } from '@/pages/tm/TmKpisPage';
+import { TeamPage } from '@/pages/client/TeamPage';
+import { WebhooksPage } from '@/pages/client/WebhooksPage';
+import { AuditLogsPage } from '@/pages/admin/AuditLogsPage';
 import { ClientDashboard } from '@/pages/client/ClientDashboard';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { ForbiddenPage } from '@/pages/ForbiddenPage';
@@ -74,7 +78,7 @@ export function App(): JSX.Element {
 
                 <Route element={<ProtectedRoute allowedRoles={['super_admin']} />}>
                   <Route element={<AppLayout />}>
-                    <Route path="/admin/audit-logs" element={<PlaceholderPage title="Journal d'audit" phase="S10" />} />
+                    <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
                     <Route path="/admin/settings" element={<PlaceholderPage title="Paramètres app" phase="S5" />} />
                   </Route>
                 </Route>
@@ -84,7 +88,7 @@ export function App(): JSX.Element {
                     <Route path="/tm" element={<TmDashboard />} />
                     <Route path="/tm/campaigns" element={<CampaignsPage />} />
                     <Route path="/tm/campaigns/:id" element={<CampaignDetailPage />} />
-                    <Route path="/tm/kpis" element={<PlaceholderPage title="Saisie KPIs" phase="S7" />} />
+                    <Route path="/tm/kpis" element={<TmKpisPage />} />
                     <Route path="/tm/forecasts" element={<PlaceholderPage title="Prévisions" phase="S11" />} />
                   </Route>
                 </Route>
@@ -108,8 +112,8 @@ export function App(): JSX.Element {
 
                 <Route element={<ProtectedRoute allowedRoles={['client_owner']} />}>
                   <Route element={<AppLayout />}>
-                    <Route path="/client/team" element={<PlaceholderPage title="Équipe" phase="S3" />} />
-                    <Route path="/client/webhooks" element={<PlaceholderPage title="Webhooks" phase="S10" />} />
+                    <Route path="/client/team" element={<TeamPage />} />
+                    <Route path="/client/webhooks" element={<WebhooksPage />} />
                   </Route>
                 </Route>
 

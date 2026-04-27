@@ -6,7 +6,7 @@
 
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, XCircle, Play, Square, BarChart3, Building2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, Play, Square, BarChart3, Building2, Receipt } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   formatAmount,
@@ -18,6 +18,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { useCampaign, useUpdateCampaignStatus } from '@/hooks/useCampaigns';
 import { useCampaignKpis } from '@/hooks/useKpis';
+import { useGenerateInvoiceFromCampaign } from '@/hooks/useInvoices';
 import { useOrganization } from '@/hooks/useOrganizations';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
@@ -37,7 +38,7 @@ export function CampaignDetailPage(): JSX.Element {
   const navigate = useNavigate();
   const { i18n } = useTranslation();
   const lang = (i18n.language === 'en' ? 'en' : 'fr') as 'fr' | 'en';
-  const { profile, isStaff } = useAuth();
+  const { profile, isStaff, isAdmin } = useAuth();
   const toast = useToast();
 
   const { data: rawCampaign, isLoading, error } = useCampaign(id);
@@ -45,6 +46,18 @@ export function CampaignDetailPage(): JSX.Element {
   const { data: org } = useOrganization(campaign?.organizationId);
   const { data: kpis } = useCampaignKpis(id);
   const updateStatus = useUpdateCampaignStatus();
+  const generateInvoice = useGenerateInvoiceFromCampaign();
+
+  const handleGenerateInvoice = async () => {
+    if (!confirm('Générer la facture pour cette campagne ?')) return;
+    try {
+      const invoiceId = await generateInvoice.mutateAsync({ campaignId: campaign!.id });
+      toast.show({ variant: 'success', title: 'Facture générée' });
+      navigate(`${isStaff ? '/admin' : '/client'}/invoices/${invoiceId}`);
+    } catch (err) {
+      toast.show({ variant: 'error', title: 'Erreur', message: err instanceof Error ? err.message : 'Inconnu' });
+    }
+  };
 
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -160,6 +173,11 @@ export function CampaignDetailPage(): JSX.Element {
             {campaign.status === 'paused' && (
               <Button onClick={() => transition('active', { successMsg: 'Campagne reprise' })}>
                 <Play className="h-4 w-4" />Reprendre
+              </Button>
+            )}
+            {campaign.status === 'completed' && isAdmin && (
+              <Button onClick={handleGenerateInvoice} isLoading={generateInvoice.isPending}>
+                <Receipt className="h-4 w-4" />Générer facture
               </Button>
             )}
           </CardContent>
