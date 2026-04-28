@@ -3,8 +3,9 @@
  */
 
 import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Shield, ShieldCheck, ShieldOff, Smartphone } from 'lucide-react';
+import { Shield, ShieldCheck, ShieldOff, Smartphone, Lock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/components/ui/Toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -19,6 +20,9 @@ export function SecurityPage(): JSX.Element {
   const { profile, refresh } = useAuth();
   const toast = useToast();
   const qc = useQueryClient();
+  const location = useLocation();
+  const enforced = (location.state as { enforceTwoFactor?: boolean } | null)?.enforceTwoFactor ?? false;
+  const isSuperAdmin = profile?.role === 'super_admin';
 
   const [enrolling, setEnrolling] = useState(false);
   const [factorId, setFactorId] = useState<string | null>(null);
@@ -107,6 +111,19 @@ export function SecurityPage(): JSX.Element {
         <h1 className="text-2xl font-bold text-textPrimary">Sécurité</h1>
         <p className="mt-1 text-sm text-textSecondary">Gère ton 2FA et la sécurité de ton compte.</p>
       </div>
+
+      {(enforced || (isSuperAdmin && !profile?.twoFactorEnabled)) && (
+        <Alert variant="error" title="🔒 2FA obligatoire pour super_admin">
+          <p>
+            Ton rôle <strong>super_admin</strong> donne accès aux configurations financières
+            critiques (cours parallèle, divisor, ajustement factures). Le 2FA TOTP est <strong>obligatoire</strong>{' '}
+            avant de pouvoir accéder au reste de l'application.
+          </p>
+          <p className="mt-2 text-xs">
+            Active-le ci-dessous avec Google Authenticator, Authy, 1Password ou une autre app TOTP.
+          </p>
+        </Alert>
+      )}
 
       <Card>
         <CardHeader>
