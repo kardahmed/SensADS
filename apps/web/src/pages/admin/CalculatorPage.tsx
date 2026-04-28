@@ -31,39 +31,61 @@ import { Label } from '@/components/ui/Label';
 import { Select } from '@/components/ui/Select';
 import { CostDisplay } from '@/components/ui/CostDisplay';
 
-const ACCOUNT_CURRENCIES = [
-  { code: 'USD', label: 'USD (compte standard)', defaultBankRate: 1, defaultCpmRealAccount: 0.30 },
-  { code: 'INR', label: 'INR (compte indien — CPM bas)', defaultBankRate: 0.011, defaultCpmRealAccount: 16 },
-  { code: 'EUR', label: 'EUR (compte européen)', defaultBankRate: 1.08, defaultCpmRealAccount: 0.25 },
-  { code: 'AED', label: 'AED (Émirats)', defaultBankRate: 0.272, defaultCpmRealAccount: 0.90 },
-  { code: 'GBP', label: 'GBP (UK)', defaultBankRate: 1.26, defaultCpmRealAccount: 0.40 },
-  { code: 'MAD', label: 'MAD (Maroc)', defaultBankRate: 0.099, defaultCpmRealAccount: 2.50 },
-  { code: 'TND', label: 'TND (Tunisie)', defaultBankRate: 0.32, defaultCpmRealAccount: 0.80 },
-] as const;
+/**
+ * Comptes pub agence (mockés pour le calculator de Sprint 1).
+ * Sera remplacé en Sprint 2 par lecture depuis la table `agency_ad_accounts`
+ * que l'utilisateur gérera via /admin/ad-accounts.
+ *
+ * Le user choisit un compte → currency + bank rate + CPM observé sont auto-déduits.
+ */
+interface AgencyAdAccount {
+  id: string;
+  name: string;
+  currency: string;
+  bankRateToUsd: number;
+  observedCpm: number;
+  notes?: string;
+}
+
+const AGENCY_ACCOUNTS: AgencyAdAccount[] = [
+  { id: 'sensads_usd_01', name: 'sensads_usd_01', currency: 'USD', bankRateToUsd: 1, observedCpm: 0.30, notes: 'Compte USD principal' },
+  { id: 'sensads_usd_02', name: 'sensads_usd_02', currency: 'USD', bankRateToUsd: 1, observedCpm: 0.32, notes: 'Compte USD backup' },
+  { id: 'sensads_inr_01', name: 'sensads_inr_01', currency: 'INR', bankRateToUsd: 0.011, observedCpm: 16, notes: 'Compte indien — CPM bas' },
+  { id: 'sensads_inr_02', name: 'sensads_inr_02', currency: 'INR', bankRateToUsd: 0.011, observedCpm: 18, notes: 'Compte indien #2' },
+  { id: 'sensads_eur_01', name: 'sensads_eur_01', currency: 'EUR', bankRateToUsd: 1.08, observedCpm: 0.25, notes: 'Compte européen' },
+  { id: 'sensads_aed_01', name: 'sensads_aed_01', currency: 'AED', bankRateToUsd: 0.272, observedCpm: 0.90, notes: 'Compte Émirats' },
+  { id: 'sensads_gbp_01', name: 'sensads_gbp_01', currency: 'GBP', bankRateToUsd: 1.26, observedCpm: 0.40, notes: 'Compte UK' },
+];
 
 interface ScenarioInput {
   depositDzd: number;
   parallelRate: number;
   feesPct: number;
   divisor: number;
-  accountCurrency: string;
-  bankRateToUsd: number;
-  realCpmAccountCurrency: number;
+  /** ID du compte pub agence sélectionné (les autres champs en découlent) */
+  accountId: string;
+  /** Override CPM réel observé sur ce compte (sinon valeur par défaut du compte) */
+  observedCpmOverride: number | null;
   estimatedCtr: number;
   estimatedCvr: number;
 }
+
+const DEFAULT_ACCOUNT = AGENCY_ACCOUNTS[2]; // sensads_inr_01
 
 const INITIAL_SCENARIO: ScenarioInput = {
   depositDzd: 1_200_000,
   parallelRate: 260,
   feesPct: 0.06,
   divisor: 2.6,
-  accountCurrency: 'INR',
-  bankRateToUsd: 0.011,
-  realCpmAccountCurrency: 16,
+  accountId: DEFAULT_ACCOUNT.id,
+  observedCpmOverride: null,
   estimatedCtr: 0.015,
   estimatedCvr: 0.005,
 };
+
+function getAccount(id: string): AgencyAdAccount {
+  return AGENCY_ACCOUNTS.find((a) => a.id === id) ?? AGENCY_ACCOUNTS[0];
+}
 
 interface ScenarioResult {
   config: BdcFinancialConfig;
@@ -91,30 +113,31 @@ function computeScenario(input: ScenarioInput): ScenarioResult {
     divisor: input.divisor,
   };
 
+  const account = getAccount(input.accountId);
+  const realCpmAccountCurrency = input.observedCpmOverride ?? account.observedCpm;
+
   const realUsd = executableBudgetUsd(input.depositDzd, config);
-  const realInAccount = input.accountCurrency === 'USD'
+  const realInAccount = account.currency === 'USD'
     ? realUsd
-    : realUsd / input.bankRateToUsd;
+    : realUsd / account.bankRateToUsd;
 
   const marginDzd = cashMarginDzd(input.depositDzd, config);
   const marginPct = input.depositDzd > 0 ? marginDzd / input.depositDzd : 0;
 
   // Real CPM converted to USD : CPM_account × bankRate
-  const realCpmUsd = input.accountCurrency === 'USD'
-    ? input.realCpmAccountCurrency
-    : input.realCpmAccountCurrency * input.bankRateToUsd;
+  const realCpmUsd = account.currency === 'USD'
+    ? realCpmAccountCurrency
+    : realCpmAccountCurrency * account.bankRateToUsd;
 
-  // Estimate impressions
   const impressions = realCpmUsd > 0 ? Math.round((realUsd / realCpmUsd) * 1000) : 0;
   const clicks = Math.round(impressions * input.estimatedCtr);
   const conversions = Math.round(clicks * input.estimatedCvr);
 
-  // Derive client KPIs to get displayed costs
   const kpis = deriveClientKpisFromReal(
     {
       spendAccountCurrency: realInAccount,
-      accountCurrency: input.accountCurrency,
-      bankRateToUsd: input.bankRateToUsd,
+      accountCurrency: account.currency,
+      bankRateToUsd: account.bankRateToUsd,
       impressions,
       clicks,
       conversions,
@@ -126,8 +149,8 @@ function computeScenario(input: ScenarioInput): ScenarioResult {
     input.depositDzd,
     {
       amountAccountCurrency: realInAccount,
-      accountCurrency: input.accountCurrency,
-      bankRateToUsd: input.bankRateToUsd,
+      accountCurrency: account.currency,
+      bankRateToUsd: account.bankRateToUsd,
     },
     config,
   );
@@ -169,17 +192,9 @@ export function CalculatorPage(): JSX.Element {
   const resultB = useMemo(() => computeScenario(scenarioB), [scenarioB]);
 
   const updateA = (patch: Partial<ScenarioInput>) =>
-    setScenarioA((s) => syncBankRate({ ...s, ...patch }));
+    setScenarioA((s) => ({ ...s, ...patch }));
   const updateB = (patch: Partial<ScenarioInput>) =>
-    setScenarioB((s) => syncBankRate({ ...s, ...patch }));
-
-  function syncBankRate(s: ScenarioInput): ScenarioInput {
-    const cur = ACCOUNT_CURRENCIES.find((c) => c.code === s.accountCurrency);
-    if (cur && s.bankRateToUsd === 0) {
-      return { ...s, bankRateToUsd: cur.defaultBankRate, realCpmAccountCurrency: cur.defaultCpmRealAccount };
-    }
-    return s;
-  }
+    setScenarioB((s) => ({ ...s, ...patch }));
 
   return (
     <div className="space-y-6">
@@ -332,44 +347,49 @@ function ScenarioCard({ title, input, result, onChange, accent }: ScenarioCardPr
             />
           </div>
           <div className="space-y-1.5 md:col-span-2">
-            <Label htmlFor="acc">Compte pub</Label>
+            <Label htmlFor="acc">Compte pub agence</Label>
             <Select
               id="acc"
-              value={input.accountCurrency}
-              onChange={(e) => {
-                const cur = ACCOUNT_CURRENCIES.find((c) => c.code === e.target.value);
-                onChange({
-                  accountCurrency: e.target.value,
-                  bankRateToUsd: cur?.defaultBankRate ?? 1,
-                  realCpmAccountCurrency: cur?.defaultCpmRealAccount ?? 0.30,
-                });
-              }}
+              value={input.accountId}
+              onChange={(e) => onChange({ accountId: e.target.value, observedCpmOverride: null })}
             >
-              {ACCOUNT_CURRENCIES.map((c) => (
-                <option key={c.code} value={c.code}>{c.label}</option>
+              {AGENCY_ACCOUNTS.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name} ({a.currency}) — CPM réel ≈ {a.observedCpm} {a.currency}
+                </option>
               ))}
             </Select>
+            {(() => {
+              const acc = getAccount(input.accountId);
+              return (
+                <p className="text-xs text-textSecondary">
+                  Devise auto : <span className="font-mono">{acc.currency}</span>
+                  {' · '}
+                  Bank rate → USD : <span className="font-mono">{acc.bankRateToUsd}</span>
+                  {acc.notes && (
+                    <span className="block italic">{acc.notes}</span>
+                  )}
+                </p>
+              );
+            })()}
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="rate">Bank rate → USD</Label>
-            <Input
-              id="rate"
-              type="number"
-              step="0.0001"
-              min="0.0001"
-              value={input.bankRateToUsd}
-              onChange={(e) => onChange({ bankRateToUsd: Number(e.target.value) || 0 })}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="cpm">Real CPM compte ({input.accountCurrency})</Label>
+          <div className="space-y-1.5 md:col-span-2">
+            <Label htmlFor="cpm">
+              Real CPM observé ({getAccount(input.accountId).currency})
+              <span className="ml-1 text-xs font-normal text-textSecondary">— override optionnel</span>
+            </Label>
             <Input
               id="cpm"
               type="number"
               step="0.01"
               min="0.001"
-              value={input.realCpmAccountCurrency}
-              onChange={(e) => onChange({ realCpmAccountCurrency: Number(e.target.value) || 0.001 })}
+              placeholder={String(getAccount(input.accountId).observedCpm)}
+              value={input.observedCpmOverride ?? getAccount(input.accountId).observedCpm}
+              onChange={(e) => {
+                const v = Number(e.target.value) || 0;
+                const def = getAccount(input.accountId).observedCpm;
+                onChange({ observedCpmOverride: v === def ? null : v });
+              }}
             />
           </div>
           <div className="space-y-1.5">
@@ -422,9 +442,9 @@ function ScenarioCard({ title, input, result, onChange, accent }: ScenarioCardPr
               </p>
             </div>
             <div>
-              <p className="text-xs text-textSecondary">Injecté ({input.accountCurrency})</p>
+              <p className="text-xs text-textSecondary">Injecté ({getAccount(input.accountId).currency})</p>
               <p className="font-mono text-textPrimary">
-                {result.realInAccountCurrency.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} {input.accountCurrency}
+                {result.realInAccountCurrency.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} {getAccount(input.accountId).currency}
               </p>
             </div>
             <div>
