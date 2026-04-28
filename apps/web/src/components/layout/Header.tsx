@@ -1,6 +1,7 @@
 import { NotificationsBell } from './NotificationsBell';
 import { UserMenu } from './UserMenu';
 import { CommandPaletteTrigger } from './CommandPalette';
+import { CurrencyToggle } from '@/components/ui/CostDisplay';
 
 export function Header(): JSX.Element {
   return (
@@ -9,6 +10,7 @@ export function Header(): JSX.Element {
         <CommandPaletteTrigger />
       </div>
       <div className="flex items-center gap-2">
+        <CurrencyToggle />
         <NotificationsBell />
         <UserMenu />
       </div>
