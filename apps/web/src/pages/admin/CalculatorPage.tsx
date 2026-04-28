@@ -30,15 +30,27 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Select } from '@/components/ui/Select';
 import { CostDisplay } from '@/components/ui/CostDisplay';
+import { useAgencyAdAccounts } from '@/hooks/useAgencyAdAccounts';
 
 /**
- * Comptes pub agence (mockés pour le calculator de Sprint 1).
- * Sera remplacé en Sprint 2 par lecture depuis la table `agency_ad_accounts`
- * que l'utilisateur gérera via /admin/ad-accounts.
- *
- * Le user choisit un compte → currency + bank rate + CPM observé sont auto-déduits.
+ * Bank rates par défaut (utilisés si pas de bank rate récent en DB pour la devise).
+ * Tu peux les surcharger via la page /admin/exchange-rates.
  */
-interface AgencyAdAccount {
+const DEFAULT_BANK_RATES: Record<string, number> = {
+  USD: 1,
+  EUR: 1.08,
+  GBP: 1.26,
+  INR: 0.011,
+  AED: 0.272,
+  MAD: 0.099,
+  TND: 0.32,
+  SAR: 0.266,
+  QAR: 0.275,
+  CAD: 0.73,
+  CHF: 1.12,
+};
+
+interface AccountForCalc {
   id: string;
   name: string;
   currency: string;
@@ -46,16 +58,6 @@ interface AgencyAdAccount {
   observedCpm: number;
   notes?: string;
 }
-
-const AGENCY_ACCOUNTS: AgencyAdAccount[] = [
-  { id: 'sensads_usd_01', name: 'sensads_usd_01', currency: 'USD', bankRateToUsd: 1, observedCpm: 0.30, notes: 'Compte USD principal' },
-  { id: 'sensads_usd_02', name: 'sensads_usd_02', currency: 'USD', bankRateToUsd: 1, observedCpm: 0.32, notes: 'Compte USD backup' },
-  { id: 'sensads_inr_01', name: 'sensads_inr_01', currency: 'INR', bankRateToUsd: 0.011, observedCpm: 16, notes: 'Compte indien — CPM bas' },
-  { id: 'sensads_inr_02', name: 'sensads_inr_02', currency: 'INR', bankRateToUsd: 0.011, observedCpm: 18, notes: 'Compte indien #2' },
-  { id: 'sensads_eur_01', name: 'sensads_eur_01', currency: 'EUR', bankRateToUsd: 1.08, observedCpm: 0.25, notes: 'Compte européen' },
-  { id: 'sensads_aed_01', name: 'sensads_aed_01', currency: 'AED', bankRateToUsd: 0.272, observedCpm: 0.90, notes: 'Compte Émirats' },
-  { id: 'sensads_gbp_01', name: 'sensads_gbp_01', currency: 'GBP', bankRateToUsd: 1.26, observedCpm: 0.40, notes: 'Compte UK' },
-];
 
 interface ScenarioInput {
   depositDzd: number;
@@ -70,22 +72,35 @@ interface ScenarioInput {
   estimatedCvr: number;
 }
 
-const DEFAULT_ACCOUNT = AGENCY_ACCOUNTS[2]; // sensads_inr_01
-
 const INITIAL_SCENARIO: ScenarioInput = {
   depositDzd: 1_200_000,
   parallelRate: 260,
   feesPct: 0.06,
   divisor: 2.6,
-  accountId: DEFAULT_ACCOUNT.id,
+  accountId: '',
   observedCpmOverride: null,
   estimatedCtr: 0.015,
   estimatedCvr: 0.005,
 };
 
-function getAccount(id: string): AgencyAdAccount {
-  return AGENCY_ACCOUNTS.find((a) => a.id === id) ?? AGENCY_ACCOUNTS[0];
-}
+const EMPTY_SCENARIO: ScenarioResult = {
+  config: { parallelRate: 0, feesPct: 0, divisor: 1 },
+  markup: 0,
+  realUsd: 0,
+  realDzdParallel: 0,
+  realInAccountCurrency: 0,
+  marginDzd: 0,
+  marginPct: 0,
+  estimatedImpressions: 0,
+  estimatedClicks: 0,
+  estimatedConversions: 0,
+  displayedSpendDzd: 0,
+  displayedSpendUsd: 0,
+  displayedCpmDzd: 0,
+  displayedCpmUsd: 0,
+  displayedCpcDzd: 0,
+  displayedCpcUsd: 0,
+};
 
 interface ScenarioResult {
   config: BdcFinancialConfig;
@@ -106,14 +121,17 @@ interface ScenarioResult {
   displayedCpcUsd: number;
 }
 
-function computeScenario(input: ScenarioInput): ScenarioResult {
+function computeScenario(input: ScenarioInput, accounts: AccountForCalc[]): ScenarioResult {
   const config: BdcFinancialConfig = {
     parallelRate: input.parallelRate,
     feesPct: input.feesPct,
     divisor: input.divisor,
   };
 
-  const account = getAccount(input.accountId);
+  const account = accounts.find((a) => a.id === input.accountId) ?? accounts[0];
+  if (!account) {
+    return EMPTY_SCENARIO;
+  }
   const realCpmAccountCurrency = input.observedCpmOverride ?? account.observedCpm;
 
   const realUsd = executableBudgetUsd(input.depositDzd, config);
@@ -179,17 +197,44 @@ export function CalculatorPage(): JSX.Element {
   const { i18n } = useTranslation();
   const lang = (i18n.language === 'en' ? 'en' : 'fr') as 'fr' | 'en';
 
-  const [scenarioA, setScenarioA] = useState<ScenarioInput>(INITIAL_SCENARIO);
+  const accountsQ = useAgencyAdAccounts({ activeOnly: true });
+
+  const accounts: AccountForCalc[] = useMemo(() => {
+    return (accountsQ.data ?? []).map((a) => ({
+      id: a.id,
+      name: a.name,
+      currency: a.accountCurrency,
+      bankRateToUsd: DEFAULT_BANK_RATES[a.accountCurrency] ?? 1,
+      observedCpm: a.observedCpmAccountCurrency,
+      notes: a.notes ?? undefined,
+    }));
+  }, [accountsQ.data]);
+
+  const initialScenario: ScenarioInput = useMemo(() => {
+    const inrAccount = accounts.find((a) => a.currency === 'INR');
+    return {
+      ...INITIAL_SCENARIO,
+      accountId: inrAccount?.id ?? accounts[0]?.id ?? '',
+    };
+  }, [accounts]);
+
+  const [scenarioA, setScenarioA] = useState<ScenarioInput>(initialScenario);
   const [scenarioB, setScenarioB] = useState<ScenarioInput>({
-    ...INITIAL_SCENARIO,
+    ...initialScenario,
     parallelRate: 280,
     divisor: 3.0,
     feesPct: 0.07,
   });
   const [compareEnabled, setCompareEnabled] = useState(false);
 
-  const resultA = useMemo(() => computeScenario(scenarioA), [scenarioA]);
-  const resultB = useMemo(() => computeScenario(scenarioB), [scenarioB]);
+  // Si les comptes arrivent après mount, on remplit l'accountId du scénario A
+  if (!scenarioA.accountId && accounts.length > 0) {
+    setScenarioA(initialScenario);
+    setScenarioB({ ...initialScenario, parallelRate: 280, divisor: 3.0, feesPct: 0.07 });
+  }
+
+  const resultA = useMemo(() => computeScenario(scenarioA, accounts), [scenarioA, accounts]);
+  const resultB = useMemo(() => computeScenario(scenarioB, accounts), [scenarioB, accounts]);
 
   const updateA = (patch: Partial<ScenarioInput>) =>
     setScenarioA((s) => ({ ...s, ...patch }));
@@ -215,24 +260,44 @@ export function CalculatorPage(): JSX.Element {
         </button>
       </div>
 
-      <div className={`grid gap-6 ${compareEnabled ? 'lg:grid-cols-2' : ''}`}>
-        <ScenarioCard
-          title={compareEnabled ? 'Scénario A' : 'Simulation'}
-          input={scenarioA}
-          result={resultA}
-          onChange={updateA}
-          accent="text-accent"
-        />
-        {compareEnabled && (
+      {accountsQ.isLoading && (
+        <Card><CardContent className="p-6 text-center text-textSecondary">Chargement des comptes pub agence...</CardContent></Card>
+      )}
+
+      {!accountsQ.isLoading && accounts.length === 0 && (
+        <Card>
+          <CardContent className="space-y-3 p-6">
+            <p className="font-medium text-warning">Aucun compte pub agence configuré.</p>
+            <p className="text-sm text-textSecondary">
+              Va dans <span className="font-mono">/admin/ad-accounts</span> pour ajouter tes comptes USD/INR/EUR/AED…
+              Le calculator a besoin d'au moins un compte actif pour estimer les impressions.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {!accountsQ.isLoading && accounts.length > 0 && (
+        <div className={`grid gap-6 ${compareEnabled ? 'lg:grid-cols-2' : ''}`}>
           <ScenarioCard
-            title="Scénario B"
-            input={scenarioB}
-            result={resultB}
-            onChange={updateB}
-            accent="text-violet-400"
+            title={compareEnabled ? 'Scénario A' : 'Simulation'}
+            input={scenarioA}
+            result={resultA}
+            onChange={updateA}
+            accounts={accounts}
+            accent="text-accent"
           />
-        )}
-      </div>
+          {compareEnabled && (
+            <ScenarioCard
+              title="Scénario B"
+              input={scenarioB}
+              result={resultB}
+              onChange={updateB}
+              accounts={accounts}
+              accent="text-violet-400"
+            />
+          )}
+        </div>
+      )}
 
       {compareEnabled && (
         <Card>
@@ -282,12 +347,15 @@ interface ScenarioCardProps {
   input: ScenarioInput;
   result: ScenarioResult;
   onChange: (patch: Partial<ScenarioInput>) => void;
+  accounts: AccountForCalc[];
   accent: string;
 }
 
-function ScenarioCard({ title, input, result, onChange, accent }: ScenarioCardProps): JSX.Element {
+function ScenarioCard({ title, input, result, onChange, accounts, accent }: ScenarioCardProps): JSX.Element {
   const { i18n } = useTranslation();
   const lang = (i18n.language === 'en' ? 'en' : 'fr') as 'fr' | 'en';
+
+  const currentAccount = accounts.find((a) => a.id === input.accountId) ?? accounts[0];
 
   const marginLevel = result.marginPct >= 0.6 ? 'green' : result.marginPct >= 0.4 ? 'orange' : 'red';
   const marginColor =
@@ -353,29 +421,24 @@ function ScenarioCard({ title, input, result, onChange, accent }: ScenarioCardPr
               value={input.accountId}
               onChange={(e) => onChange({ accountId: e.target.value, observedCpmOverride: null })}
             >
-              {AGENCY_ACCOUNTS.map((a) => (
+              {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name} ({a.currency}) — CPM réel ≈ {a.observedCpm} {a.currency}
                 </option>
               ))}
             </Select>
-            {(() => {
-              const acc = getAccount(input.accountId);
-              return (
-                <p className="text-xs text-textSecondary">
-                  Devise auto : <span className="font-mono">{acc.currency}</span>
-                  {' · '}
-                  Bank rate → USD : <span className="font-mono">{acc.bankRateToUsd}</span>
-                  {acc.notes && (
-                    <span className="block italic">{acc.notes}</span>
-                  )}
-                </p>
-              );
-            })()}
+            {currentAccount && (
+              <p className="text-xs text-textSecondary">
+                Devise auto : <span className="font-mono">{currentAccount.currency}</span>
+                {' · '}
+                Bank rate → USD : <span className="font-mono">{currentAccount.bankRateToUsd}</span>
+                {currentAccount.notes && <span className="block italic">{currentAccount.notes}</span>}
+              </p>
+            )}
           </div>
           <div className="space-y-1.5 md:col-span-2">
             <Label htmlFor="cpm">
-              Real CPM observé ({getAccount(input.accountId).currency})
+              Real CPM observé ({currentAccount?.currency ?? 'USD'})
               <span className="ml-1 text-xs font-normal text-textSecondary">— override optionnel</span>
             </Label>
             <Input
@@ -383,11 +446,11 @@ function ScenarioCard({ title, input, result, onChange, accent }: ScenarioCardPr
               type="number"
               step="0.01"
               min="0.001"
-              placeholder={String(getAccount(input.accountId).observedCpm)}
-              value={input.observedCpmOverride ?? getAccount(input.accountId).observedCpm}
+              placeholder={String(currentAccount?.observedCpm ?? 0)}
+              value={input.observedCpmOverride ?? currentAccount?.observedCpm ?? 0}
               onChange={(e) => {
                 const v = Number(e.target.value) || 0;
-                const def = getAccount(input.accountId).observedCpm;
+                const def = currentAccount?.observedCpm ?? 0;
                 onChange({ observedCpmOverride: v === def ? null : v });
               }}
             />
@@ -442,9 +505,9 @@ function ScenarioCard({ title, input, result, onChange, accent }: ScenarioCardPr
               </p>
             </div>
             <div>
-              <p className="text-xs text-textSecondary">Injecté ({getAccount(input.accountId).currency})</p>
+              <p className="text-xs text-textSecondary">Injecté ({(currentAccount?.currency ?? 'USD')})</p>
               <p className="font-mono text-textPrimary">
-                {result.realInAccountCurrency.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} {getAccount(input.accountId).currency}
+                {result.realInAccountCurrency.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} {(currentAccount?.currency ?? 'USD')}
               </p>
             </div>
             <div>

@@ -76,12 +76,17 @@ export interface CreatePoInput {
   parentPoId?: string;
   amountTtcDzd: number;
   fileUrl?: string;
+  // Config financière verrouillée à la création (Sprint 1)
+  parallelRateLocked: number;
+  feesPctLocked: number;
+  divisorCurrent: number;
 }
 
 export function useCreatePurchaseOrder() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: CreatePoInput) => {
+      const { data: userData } = await supabase.auth.getUser();
       const { data, error } = await supabase
         .from('purchase_orders')
         .insert({
@@ -91,12 +96,23 @@ export function useCreatePurchaseOrder() {
           amount_ttc_dzd: input.amountTtcDzd,
           file_url: input.fileUrl ?? null,
           status: 'active',
+          parallel_rate_locked: input.parallelRateLocked,
+          fees_pct_locked: input.feesPctLocked,
+          divisor_current: input.divisorCurrent,
+          divisor_history: [
+            {
+              changed_at: new Date().toISOString(),
+              from: null,
+              to: input.divisorCurrent,
+              note: 'Configuration initiale à la création du BDC',
+              changed_by: userData.user?.id ?? null,
+            },
+          ],
         })
         .select('*')
         .single();
       if (error) throw error;
 
-      // Si lié à un devis : marquer le devis comme converti
       if (input.quoteId) {
         await supabase
           .from('quotes')
@@ -109,6 +125,94 @@ export function useCreatePurchaseOrder() {
       void qc.invalidateQueries({ queryKey: ['purchase-orders'] });
       void qc.invalidateQueries({ queryKey: ['quotes'] });
       void qc.invalidateQueries({ queryKey: ['quote'] });
+    },
+  });
+}
+
+/**
+ * Modifier le divisor d'un BDC en cours (avec note obligatoire).
+ * Le trigger DB log_divisor_change exige une note >= 5 caractères.
+ */
+export function useUpdateBdcDivisor() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { id: string; newDivisor: number; note: string; marginImpactDzd?: number }) => {
+      const { data: userData } = await supabase.auth.getUser();
+
+      // Charger le BDC actuel pour récupérer divisor_history existant
+      const { data: po, error: errLoad } = await supabase
+        .from('purchase_orders')
+        .select('divisor_current, divisor_history')
+        .eq('id', input.id)
+        .single();
+      if (errLoad) throw errLoad;
+
+      const oldDivisor = (po as { divisor_current: number }).divisor_current;
+      const history = ((po as { divisor_history: unknown[] }).divisor_history ?? []) as unknown[];
+
+      const newEntry = {
+        changed_at: new Date().toISOString(),
+        from: oldDivisor,
+        to: input.newDivisor,
+        note: input.note,
+        changed_by: userData.user?.id ?? null,
+        margin_impact_dzd: input.marginImpactDzd ?? null,
+      };
+
+      const { error } = await supabase
+        .from('purchase_orders')
+        .update({
+          divisor_current: input.newDivisor,
+          divisor_history: [...history, newEntry],
+        })
+        .eq('id', input.id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => {
+      void qc.invalidateQueries({ queryKey: ['purchase-order', v.id] });
+      void qc.invalidateQueries({ queryKey: ['purchase-orders'] });
+    },
+  });
+}
+
+/**
+ * Récupère le BDC avec sa config verrouillée + l'historique du divisor.
+ * Utilise une requête raw car les colonnes Sprint 1 ne sont pas encore dans le mapper.
+ */
+export function useBdcWithConfig(id: string | undefined) {
+  return useQuery({
+    queryKey: ['bdc-config', id],
+    enabled: !!id,
+    queryFn: async () => {
+      if (!id) return null;
+      const { data, error } = await supabase
+        .from('purchase_orders')
+        .select('id, number, parallel_rate_locked, fees_pct_locked, divisor_current, divisor_history, amount_ttc_dzd, consumed_amount_dzd, remaining_amount_dzd, status')
+        .eq('id', id)
+        .single();
+      if (error) {
+        if (error.code === 'PGRST116') return null;
+        throw error;
+      }
+      return data as {
+        id: string;
+        number: string;
+        parallel_rate_locked: number | null;
+        fees_pct_locked: number | null;
+        divisor_current: number | null;
+        divisor_history: Array<{
+          changed_at: string;
+          from: number | null;
+          to: number;
+          note: string;
+          changed_by: string | null;
+          margin_impact_dzd?: number | null;
+        }>;
+        amount_ttc_dzd: number;
+        consumed_amount_dzd: number;
+        remaining_amount_dzd: number;
+        status: string;
+      };
     },
   });
 }

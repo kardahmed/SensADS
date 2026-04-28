@@ -19,6 +19,8 @@ import {
   ChevronsRight,
   Sparkles,
   Calculator,
+  CreditCard,
+  ClipboardList,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
@@ -52,6 +54,8 @@ export function Sidebar(): JSX.Element {
     { to: '/admin/forecasts', label: t('nav.forecasts'), icon: CalendarRange, roles: ['super_admin', 'admin'] },
     { to: '/admin/suggestions', label: t('nav.suggestions', { defaultValue: 'Suggestions' }), icon: Sparkles, roles: ['super_admin', 'admin'] },
     { to: '/admin/calculator', label: t('nav.calculator', { defaultValue: 'Calculator' }), icon: Calculator, roles: ['super_admin', 'admin'] },
+    { to: '/admin/ad-accounts', label: t('nav.adAccounts', { defaultValue: 'Comptes pub' }), icon: CreditCard, roles: ['super_admin', 'admin'] },
+    { to: '/admin/media-plans', label: t('nav.mediaPlans', { defaultValue: 'Plans Média' }), icon: ClipboardList, roles: ['super_admin', 'admin'] },
     { to: '/admin/audit-logs', label: t('nav.audit'), icon: ScrollText, roles: ['super_admin'] },
     { to: '/admin/settings', label: t('nav.settings'), icon: Settings, roles: ['super_admin'] },
 
@@ -71,6 +75,7 @@ export function Sidebar(): JSX.Element {
     { to: '/client/reports', label: t('nav.reports'), icon: FileBarChart, roles: ['client_owner', 'client_member'] },
     { to: '/client/forecasts', label: t('nav.forecasts'), icon: CalendarRange, roles: ['client_owner', 'client_member'] },
     { to: '/client/suggestions', label: t('nav.suggestions', { defaultValue: 'Suggestions' }), icon: Sparkles, roles: ['client_owner', 'client_member'] },
+    { to: '/client/media-plans', label: t('nav.mediaPlans', { defaultValue: 'Plans Média' }), icon: ClipboardList, roles: ['client_owner', 'client_member'] },
     { to: '/client/team', label: t('nav.team'), icon: UsersRound, roles: ['client_owner'] },
     { to: '/client/webhooks', label: t('nav.webhooks'), icon: Webhook, roles: ['client_owner'] },
   ];

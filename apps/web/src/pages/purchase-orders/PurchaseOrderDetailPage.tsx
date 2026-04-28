@@ -1,10 +1,34 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Building2, FileText, XCircle, CheckCircle2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  Building2,
+  FileText,
+  XCircle,
+  CheckCircle2,
+  Lock,
+  Unlock,
+  Settings2,
+  History,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { formatAmount, formatDate, formatDateTime } from '@sensads/core';
+import {
+  cashMarginDzd,
+  formatAmount,
+  formatDate,
+  formatDateTime,
+  formatPercentage,
+  totalMarkup,
+  type BdcFinancialConfig,
+} from '@sensads/core';
 import { useAuth } from '@/hooks/useAuth';
-import { useCancelPurchaseOrder, useMarkPoPaid, usePurchaseOrder } from '@/hooks/usePurchaseOrders';
+import {
+  useBdcWithConfig,
+  useCancelPurchaseOrder,
+  useMarkPoPaid,
+  usePurchaseOrder,
+  useUpdateBdcDivisor,
+} from '@/hooks/usePurchaseOrders';
 import { useOrganization } from '@/hooks/useOrganizations';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
@@ -15,6 +39,7 @@ import { Alert } from '@/components/ui/Alert';
 import { Dialog, DialogFooter } from '@/components/ui/Dialog';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
+import { BdcDivisorEditDialog } from '@/components/bdc/BdcDivisorEditDialog';
 
 export function PurchaseOrderDetailPage(): JSX.Element {
   const { id } = useParams<{ id: string }>();
@@ -25,12 +50,15 @@ export function PurchaseOrderDetailPage(): JSX.Element {
   const toast = useToast();
 
   const { data: po, isLoading, error } = usePurchaseOrder(id);
+  const { data: bdcConfig } = useBdcWithConfig(id);
   const { data: org } = useOrganization(po?.organizationId);
   const cancel = useCancelPurchaseOrder();
   const markPaid = useMarkPoPaid();
+  const updateDivisor = useUpdateBdcDivisor();
 
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  const [divisorEditOpen, setDivisorEditOpen] = useState(false);
 
   const baseRoute = isStaff ? '/admin/purchase-orders' : '/client/purchase-orders';
 
@@ -165,6 +193,135 @@ export function PurchaseOrderDetailPage(): JSX.Element {
           </CardContent>
         </Card>
 
+        {/* VUE AGENCE — Configuration financière (staff only) */}
+        {isStaff && bdcConfig && bdcConfig.parallel_rate_locked && bdcConfig.fees_pct_locked && bdcConfig.divisor_current && (
+          <Card className="lg:col-span-2 border-violet-500/40">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-violet-300">
+                  <Settings2 className="h-4 w-4" /> Configuration financière (vue agence)
+                </CardTitle>
+                {isAdmin && !['cancelled', 'paid'].includes(po.status) && po.remainingAmountDzd > 0 && (
+                  <Button size="sm" variant="outline" onClick={() => setDivisorEditOpen(true)}>
+                    <Settings2 className="mr-1 h-3 w-3" /> Modifier divisor
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                <div className="rounded-md bg-background/30 p-2">
+                  <p className="flex items-center gap-1 text-xs text-textSecondary">
+                    <Lock className="h-3 w-3" /> Cours parallèle
+                  </p>
+                  <p className="font-mono text-lg font-bold">{bdcConfig.parallel_rate_locked}</p>
+                </div>
+                <div className="rounded-md bg-background/30 p-2">
+                  <p className="flex items-center gap-1 text-xs text-textSecondary">
+                    <Lock className="h-3 w-3" /> Frais
+                  </p>
+                  <p className="font-mono text-lg font-bold">
+                    {(Number(bdcConfig.fees_pct_locked) * 100).toFixed(2)}%
+                  </p>
+                </div>
+                <div className="rounded-md bg-background/30 p-2">
+                  <p className="flex items-center gap-1 text-xs text-textSecondary">
+                    <Unlock className="h-3 w-3" /> Divisor
+                  </p>
+                  <p className="font-mono text-lg font-bold">{bdcConfig.divisor_current}</p>
+                </div>
+                <div className="rounded-md bg-background/30 p-2">
+                  <p className="text-xs text-textSecondary">Markup total</p>
+                  <p className="font-mono text-lg font-bold">
+                    × {(() => {
+                      try {
+                        const cfg: BdcFinancialConfig = {
+                          parallelRate: Number(bdcConfig.parallel_rate_locked),
+                          feesPct: Number(bdcConfig.fees_pct_locked),
+                          divisor: Number(bdcConfig.divisor_current),
+                        };
+                        return totalMarkup(cfg).toFixed(5);
+                      } catch {
+                        return '0';
+                      }
+                    })()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Marge prévisionnelle */}
+              {(() => {
+                try {
+                  const cfg: BdcFinancialConfig = {
+                    parallelRate: Number(bdcConfig.parallel_rate_locked),
+                    feesPct: Number(bdcConfig.fees_pct_locked),
+                    divisor: Number(bdcConfig.divisor_current),
+                  };
+                  const marginTotal = cashMarginDzd(po.amountTtcDzd, cfg);
+                  const marginRemaining = cashMarginDzd(po.remainingAmountDzd, cfg);
+                  const pct = po.amountTtcDzd > 0 ? marginTotal / po.amountTtcDzd : 0;
+                  const color = pct >= 0.6 ? 'text-success' : pct >= 0.4 ? 'text-warning' : 'text-error';
+                  return (
+                    <div className="grid grid-cols-2 gap-3 border-t border-border pt-3">
+                      <div>
+                        <p className="text-xs text-textSecondary">Marge cible (BDC complet)</p>
+                        <p className={`font-mono text-xl font-bold ${color}`}>
+                          {formatAmount(marginTotal, lang)}
+                        </p>
+                        <p className={`text-xs ${color}`}>{formatPercentage(pct, lang)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-textSecondary">Marge sur restant</p>
+                        <p className="font-mono text-xl font-bold">
+                          {formatAmount(marginRemaining, lang)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                } catch {
+                  return null;
+                }
+              })()}
+
+              {/* Historique divisor */}
+              {bdcConfig.divisor_history && bdcConfig.divisor_history.length > 0 && (
+                <div className="border-t border-border pt-3">
+                  <p className="mb-2 flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-textSecondary">
+                    <History className="h-3 w-3" /> Historique du divisor ({bdcConfig.divisor_history.length})
+                  </p>
+                  <ul className="space-y-2">
+                    {[...bdcConfig.divisor_history].reverse().map((entry, idx) => (
+                      <li key={idx} className="rounded-md border border-border bg-background/20 p-2 text-xs">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="font-mono">
+                            {entry.from === null ? '—' : entry.from} → {entry.to}
+                          </span>
+                          <span className="text-textSecondary">{formatDateTime(entry.changed_at, lang)}</span>
+                        </div>
+                        {entry.note && <p className="mt-1 italic text-textSecondary">{entry.note}</p>}
+                        {entry.margin_impact_dzd !== undefined && entry.margin_impact_dzd !== null && (
+                          <p
+                            className={`mt-1 font-mono ${
+                              Number(entry.margin_impact_dzd) > 0 ? 'text-success' : 'text-error'
+                            }`}
+                          >
+                            Impact : {Number(entry.margin_impact_dzd) > 0 ? '+' : ''}
+                            {formatAmount(Number(entry.margin_impact_dzd), lang)}
+                          </p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <p className="rounded-md bg-warning/10 p-2 text-xs italic text-warning">
+                ⚠ Le client ne voit aucune de ces informations. Vue 100% interne agence.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="space-y-6">
           {org && (
             <Card>
@@ -235,6 +392,41 @@ export function PurchaseOrderDetailPage(): JSX.Element {
           </DialogFooter>
         </div>
       </Dialog>
+
+      {bdcConfig &&
+        bdcConfig.parallel_rate_locked !== null &&
+        bdcConfig.fees_pct_locked !== null &&
+        bdcConfig.divisor_current !== null && (
+          <BdcDivisorEditDialog
+            open={divisorEditOpen}
+            onClose={() => setDivisorEditOpen(false)}
+            bdcNumber={po.number}
+            amountDzd={po.amountTtcDzd}
+            remainingAmountDzd={po.remainingAmountDzd}
+            parallelRateLocked={Number(bdcConfig.parallel_rate_locked)}
+            feesPctLocked={Number(bdcConfig.fees_pct_locked)}
+            currentDivisor={Number(bdcConfig.divisor_current)}
+            isSubmitting={updateDivisor.isPending}
+            onConfirm={async ({ newDivisor, note, marginImpactDzd }) => {
+              try {
+                await updateDivisor.mutateAsync({
+                  id: po.id,
+                  newDivisor,
+                  note,
+                  marginImpactDzd,
+                });
+                toast.show({ variant: 'success', title: 'Divisor modifié' });
+                setDivisorEditOpen(false);
+              } catch (err) {
+                toast.show({
+                  variant: 'error',
+                  title: 'Erreur',
+                  message: err instanceof Error ? err.message : 'Inconnu',
+                });
+              }
+            }}
+          />
+        )}
     </div>
   );
 }

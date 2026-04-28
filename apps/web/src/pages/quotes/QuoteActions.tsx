@@ -21,11 +21,13 @@ import {
 import type { Quote, UserRole } from '@sensads/core';
 import { useUpdateQuoteStatus } from '@/hooks/useQuotes';
 import { useCreatePurchaseOrder } from '@/hooks/usePurchaseOrders';
+import { useOrganization } from '@/hooks/useOrganizations';
 import { useToast } from '@/components/ui/Toast';
 import { Button } from '@/components/ui/Button';
 import { Dialog, DialogFooter } from '@/components/ui/Dialog';
 import { Textarea } from '@/components/ui/Textarea';
 import { Label } from '@/components/ui/Label';
+import { BdcConfigDialog, type BdcConfigValues } from '@/components/bdc/BdcConfigDialog';
 
 interface Props {
   quote: Quote;
@@ -40,6 +42,8 @@ export function QuoteActions({ quote, currentUserId, role }: Props): JSX.Element
   const toast = useToast();
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const [convertOpen, setConvertOpen] = useState(false);
+  const orgQ = useOrganization(quote.organizationId);
 
   const isStaff = ['super_admin', 'admin', 'traffic_manager'].includes(role);
   const isAdmin = ['super_admin', 'admin'].includes(role);
@@ -74,15 +78,20 @@ export function QuoteActions({ quote, currentUserId, role }: Props): JSX.Element
     setRejectReason('');
   };
 
-  const handleConvert = async () => {
-    if (!confirm(`Convertir ce devis en BDC pour ${quote.totalDzd.toLocaleString('fr-DZ')} DZD ?`)) return;
+  const handleConvert = () => setConvertOpen(true);
+
+  const handleConfirmConvert = async (config: BdcConfigValues) => {
     try {
       const po = await createPo.mutateAsync({
         organizationId: quote.organizationId,
         quoteId: quote.id,
         amountTtcDzd: quote.totalDzd,
+        parallelRateLocked: config.parallelRate,
+        feesPctLocked: config.feesPct,
+        divisorCurrent: config.divisor,
       });
       toast.show({ variant: 'success', title: 'BDC créé', message: `${po.number}` });
+      setConvertOpen(false);
       const baseRoute = isStaff ? '/admin/purchase-orders' : '/client/purchase-orders';
       navigate(`${baseRoute}/${po.id}`);
     } catch (err) {
@@ -92,6 +101,18 @@ export function QuoteActions({ quote, currentUserId, role }: Props): JSX.Element
         message: err instanceof Error ? err.message : 'Inconnu',
       });
     }
+  };
+
+  // Defaults config depuis l'organisation (si elle a configuré ses defaults)
+  const orgDefaults = (orgQ.data as unknown as {
+    parallelRateDefault?: number;
+    feesPctDefault?: number;
+    divisorDefault?: number;
+  } | null);
+  const bdcDefaults: Partial<BdcConfigValues> = {
+    parallelRate: orgDefaults?.parallelRateDefault ?? undefined,
+    feesPct: orgDefaults?.feesPctDefault ?? undefined,
+    divisor: orgDefaults?.divisorDefault ?? undefined,
   };
 
   const handleCancel = async () => {
@@ -235,6 +256,16 @@ export function QuoteActions({ quote, currentUserId, role }: Props): JSX.Element
           </DialogFooter>
         </div>
       </Dialog>
+
+      <BdcConfigDialog
+        open={convertOpen}
+        onClose={() => setConvertOpen(false)}
+        onConfirm={handleConfirmConvert}
+        amountDzd={quote.totalDzd}
+        title={`Convertir le devis ${quote.number} en BDC`}
+        defaults={bdcDefaults}
+        isSubmitting={createPo.isPending}
+      />
     </>
   );
 }

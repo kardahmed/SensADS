@@ -38,6 +38,10 @@ import { AuditLogsPage } from '@/pages/admin/AuditLogsPage';
 import { AppSettingsPage } from '@/pages/admin/AppSettingsPage';
 import { BenchmarksPage } from '@/pages/admin/BenchmarksPage';
 import { CalculatorPage } from '@/pages/admin/CalculatorPage';
+import { AgencyAdAccountsPage } from '@/pages/admin/AgencyAdAccountsPage';
+import { MediaPlansPage } from '@/pages/media-plans/MediaPlansPage';
+import { MediaPlanDetailPage } from '@/pages/media-plans/MediaPlanDetailPage';
+import { NewMediaPlanPage } from '@/pages/media-plans/NewMediaPlanPage';
 import { AccountPage } from '@/pages/account/AccountPage';
 import { SecurityPage } from '@/pages/account/SecurityPage';
 import { ReportsPage } from '@/pages/reports/ReportsPage';
@@ -85,6 +89,10 @@ export function App(): JSX.Element {
                     <Route path="/admin/suggestions" element={<SuggestionsPage />} />
                     <Route path="/admin/forecasts" element={<ForecastsPage />} />
                     <Route path="/admin/calculator" element={<CalculatorPage />} />
+                    <Route path="/admin/ad-accounts" element={<AgencyAdAccountsPage />} />
+                    <Route path="/admin/media-plans" element={<MediaPlansPage />} />
+                    <Route path="/admin/media-plans/new" element={<NewMediaPlanPage />} />
+                    <Route path="/admin/media-plans/:id" element={<MediaPlanDetailPage />} />
                   </Route>
                 </Route>
 
@@ -122,6 +130,9 @@ export function App(): JSX.Element {
                     <Route path="/client/reports" element={<ReportsPage />} />
                     <Route path="/client/suggestions" element={<SuggestionsPage />} />
                     <Route path="/client/forecasts" element={<ForecastsPage />} />
+                    <Route path="/client/media-plans" element={<MediaPlansPage />} />
+                    <Route path="/client/media-plans/new" element={<NewMediaPlanPage />} />
+                    <Route path="/client/media-plans/:id" element={<MediaPlanDetailPage />} />
                   </Route>
                 </Route>
 
