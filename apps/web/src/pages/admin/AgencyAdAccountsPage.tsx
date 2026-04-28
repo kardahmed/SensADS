@@ -32,6 +32,12 @@ import { Dialog, DialogFooter } from '@/components/ui/Dialog';
 
 const SUPPORTED_CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'AED', 'MAD', 'TND', 'SAR', 'QAR', 'CAD', 'CHF'];
 
+/**
+ * Plateformes où l'ID externe est OBLIGATOIRE (API connectée pour sync KPIs).
+ * Sans ID, on ne peut pas pull les données depuis Meta/Google/TikTok.
+ */
+const API_CONNECTED_PLATFORMS = new Set(['facebook', 'instagram', 'google_ads', 'tiktok']);
+
 interface FormState {
   id?: string;
   name: string;
@@ -66,6 +72,15 @@ export function AgencyAdAccountsPage(): JSX.Element {
   const onSave = async (): Promise<void> => {
     if (!form.name || form.observedCpmAccountCurrency <= 0) {
       toast.show({ variant: 'error', title: 'Nom et CPM > 0 obligatoires' });
+      return;
+    }
+    // ID externe obligatoire pour les plateformes API (Meta/Google/TikTok)
+    if (API_CONNECTED_PLATFORMS.has(form.platform) && !form.externalAccountId.trim()) {
+      toast.show({
+        variant: 'error',
+        title: 'ID compte Meta obligatoire',
+        message: `Pour ${form.platform}, l'ID externe est requis pour synchroniser les KPIs via API.`,
+      });
       return;
     }
     try {
@@ -165,10 +180,18 @@ export function AgencyAdAccountsPage(): JSX.Element {
                 </tr>
               </thead>
               <tbody>
-                {(accounts.data ?? []).map((a) => (
-                  <tr key={a.id} className="border-b border-border/40 hover:bg-background/30">
+                {(accounts.data ?? []).map((a) => {
+                  const apiPlatform = API_CONNECTED_PLATFORMS.has(a.platform);
+                  const missingId = apiPlatform && !a.externalAccountId;
+                  return (
+                  <tr key={a.id} className={`border-b border-border/40 hover:bg-background/30 ${missingId ? 'bg-warning/5' : ''}`}>
                     <td className="p-3 font-medium">{a.name}</td>
-                    <td className="p-3">{a.platform}</td>
+                    <td className="p-3">
+                      <div className="flex items-center gap-1">
+                        {a.platform}
+                        {apiPlatform && <Badge variant="info">API</Badge>}
+                      </div>
+                    </td>
                     <td className="p-3 font-mono">{a.accountCurrency}</td>
                     <td className="p-3 text-right font-mono">
                       {a.observedCpmAccountCurrency.toFixed(2)} {a.accountCurrency}
@@ -178,7 +201,15 @@ export function AgencyAdAccountsPage(): JSX.Element {
                         {a.status}
                       </Badge>
                     </td>
-                    <td className="p-3 font-mono text-xs text-textSecondary">{a.externalAccountId ?? '—'}</td>
+                    <td className="p-3 font-mono text-xs">
+                      {a.externalAccountId ? (
+                        <span className="text-textPrimary">{a.externalAccountId}</span>
+                      ) : missingId ? (
+                        <span className="text-warning">⚠ ID manquant</span>
+                      ) : (
+                        <span className="text-textSecondary">—</span>
+                      )}
+                    </td>
                     <td className="p-3 text-right">
                       <div className="flex justify-end gap-1">
                         <Button size="sm" variant="ghost" onClick={() => onEdit(a.id)}>
@@ -190,7 +221,8 @@ export function AgencyAdAccountsPage(): JSX.Element {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </CardContent>
@@ -260,13 +292,33 @@ export function AgencyAdAccountsPage(): JSX.Element {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="ext">ID compte Meta (optionnel)</Label>
+            <Label htmlFor="ext">
+              ID compte sur la plateforme {API_CONNECTED_PLATFORMS.has(form.platform) ? '*' : '(optionnel)'}
+            </Label>
             <Input
               id="ext"
-              placeholder="act_4567823910456"
+              placeholder={
+                form.platform === 'facebook' || form.platform === 'instagram'
+                  ? 'act_4567823910456 (Meta Business Manager)'
+                  : form.platform === 'google_ads'
+                    ? '123-456-7890 (Google Ads Customer ID)'
+                    : form.platform === 'tiktok'
+                      ? '7234567890123456789 (TikTok Ads Manager)'
+                      : 'ID interne (optionnel pour cette plateforme)'
+              }
               value={form.externalAccountId}
               onChange={(e) => setForm((f) => ({ ...f, externalAccountId: e.target.value }))}
             />
+            {API_CONNECTED_PLATFORMS.has(form.platform) ? (
+              <p className="text-xs text-warning">
+                ⚠ Obligatoire pour {form.platform} : sans cet ID, impossible de synchroniser les KPIs
+                via l'API et lancer les campagnes programmatiquement.
+              </p>
+            ) : (
+              <p className="text-xs text-textSecondary">
+                Cette plateforme est gérée manuellement. L'ID sert uniquement de référence.
+              </p>
+            )}
           </div>
 
           {form.id && (
