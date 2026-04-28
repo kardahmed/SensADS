@@ -39,6 +39,9 @@ import { AppSettingsPage } from '@/pages/admin/AppSettingsPage';
 import { BenchmarksPage } from '@/pages/admin/BenchmarksPage';
 import { CalculatorPage } from '@/pages/admin/CalculatorPage';
 import { AgencyAdAccountsPage } from '@/pages/admin/AgencyAdAccountsPage';
+import { ExchangeRatesPage } from '@/pages/admin/ExchangeRatesPage';
+import { ProfitabilityPage } from '@/pages/admin/ProfitabilityPage';
+import { ClientMarginHistoryPage } from '@/pages/admin/clients/ClientMarginHistoryPage';
 import { MediaPlansPage } from '@/pages/media-plans/MediaPlansPage';
 import { MediaPlanDetailPage } from '@/pages/media-plans/MediaPlanDetailPage';
 import { NewMediaPlanPage } from '@/pages/media-plans/NewMediaPlanPage';
@@ -90,6 +93,9 @@ export function App(): JSX.Element {
                     <Route path="/admin/forecasts" element={<ForecastsPage />} />
                     <Route path="/admin/calculator" element={<CalculatorPage />} />
                     <Route path="/admin/ad-accounts" element={<AgencyAdAccountsPage />} />
+                    <Route path="/admin/exchange-rates" element={<ExchangeRatesPage />} />
+                    <Route path="/admin/profitability" element={<ProfitabilityPage />} />
+                    <Route path="/admin/clients/:id/margin-history" element={<ClientMarginHistoryPage />} />
                     <Route path="/admin/media-plans" element={<MediaPlansPage />} />
                     <Route path="/admin/media-plans/new" element={<NewMediaPlanPage />} />
                     <Route path="/admin/media-plans/:id" element={<MediaPlanDetailPage />} />

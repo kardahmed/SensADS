@@ -21,6 +21,8 @@ import {
   Calculator,
   CreditCard,
   ClipboardList,
+  Coins,
+  PiggyBank,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
@@ -54,6 +56,8 @@ export function Sidebar(): JSX.Element {
     { to: '/admin/forecasts', label: t('nav.forecasts'), icon: CalendarRange, roles: ['super_admin', 'admin'] },
     { to: '/admin/suggestions', label: t('nav.suggestions', { defaultValue: 'Suggestions' }), icon: Sparkles, roles: ['super_admin', 'admin'] },
     { to: '/admin/calculator', label: t('nav.calculator', { defaultValue: 'Calculator' }), icon: Calculator, roles: ['super_admin', 'admin'] },
+    { to: '/admin/profitability', label: t('nav.profitability', { defaultValue: 'Rentabilité' }), icon: PiggyBank, roles: ['super_admin', 'admin'] },
+    { to: '/admin/exchange-rates', label: t('nav.exchangeRates', { defaultValue: 'Taux change' }), icon: Coins, roles: ['super_admin', 'admin'] },
     { to: '/admin/ad-accounts', label: t('nav.adAccounts', { defaultValue: 'Comptes pub' }), icon: CreditCard, roles: ['super_admin', 'admin'] },
     { to: '/admin/media-plans', label: t('nav.mediaPlans', { defaultValue: 'Plans Média' }), icon: ClipboardList, roles: ['super_admin', 'admin'] },
     { to: '/admin/audit-logs', label: t('nav.audit'), icon: ScrollText, roles: ['super_admin'] },
