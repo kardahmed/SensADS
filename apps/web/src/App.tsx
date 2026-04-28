@@ -37,6 +37,7 @@ import { WebhooksPage } from '@/pages/client/WebhooksPage';
 import { AuditLogsPage } from '@/pages/admin/AuditLogsPage';
 import { AppSettingsPage } from '@/pages/admin/AppSettingsPage';
 import { BenchmarksPage } from '@/pages/admin/BenchmarksPage';
+import { CalculatorPage } from '@/pages/admin/CalculatorPage';
 import { AccountPage } from '@/pages/account/AccountPage';
 import { SecurityPage } from '@/pages/account/SecurityPage';
 import { ReportsPage } from '@/pages/reports/ReportsPage';
@@ -83,6 +84,7 @@ export function App(): JSX.Element {
                     <Route path="/admin/reports" element={<ReportsPage />} />
                     <Route path="/admin/suggestions" element={<SuggestionsPage />} />
                     <Route path="/admin/forecasts" element={<ForecastsPage />} />
+                    <Route path="/admin/calculator" element={<CalculatorPage />} />
                   </Route>
                 </Route>
 

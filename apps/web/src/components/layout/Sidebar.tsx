@@ -18,6 +18,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Sparkles,
+  Calculator,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth';
@@ -50,6 +51,7 @@ export function Sidebar(): JSX.Element {
     { to: '/admin/reports', label: t('nav.reports'), icon: FileBarChart, roles: ['super_admin', 'admin'] },
     { to: '/admin/forecasts', label: t('nav.forecasts'), icon: CalendarRange, roles: ['super_admin', 'admin'] },
     { to: '/admin/suggestions', label: t('nav.suggestions', { defaultValue: 'Suggestions' }), icon: Sparkles, roles: ['super_admin', 'admin'] },
+    { to: '/admin/calculator', label: t('nav.calculator', { defaultValue: 'Calculator' }), icon: Calculator, roles: ['super_admin', 'admin'] },
     { to: '/admin/audit-logs', label: t('nav.audit'), icon: ScrollText, roles: ['super_admin'] },
     { to: '/admin/settings', label: t('nav.settings'), icon: Settings, roles: ['super_admin'] },
 
